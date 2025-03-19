@@ -1,0 +1,22 @@
+// Render.com deployment configuration
+{
+  "name": "gohighlevel-clone",
+  "env": {
+    "NODE_ENV": "production",
+    "JWT_SECRET": "render-production-jwt-secret-key",
+    "SETUP_KEY": "render-setup-key-production"
+  },
+  "buildCommand": "npm install && npm run build",
+  "startCommand": "npm start",
+  "healthCheckPath": "/api/health",
+  "envVars": [
+    {
+      "key": "JWT_SECRET",
+      "value": "render-production-jwt-secret-key"
+    },
+    {
+      "key": "SETUP_KEY",
+      "value": "render-setup-key-production"
+    }
+  ]
+}
