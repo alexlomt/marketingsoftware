@@ -1,8 +1,8 @@
 name: gohighlevel-clone
 type: web_service
 env: node
-buildCommand: ./.render/build.sh
-startCommand: ./.render/run.sh
+buildCommand: ./render/build.sh
+startCommand: ./render/run.sh
 healthCheckPath: /api/health
 envVars:
   - key: NODE_ENV
