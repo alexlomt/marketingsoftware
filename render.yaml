@@ -1,27 +1,17 @@
-{
-  "name": "gohighlevel-clone",
-  "type": "web_service",
-  "env": "node",
-  "buildCommand": "./.render/build.sh",
-  "startCommand": "./.render/run.sh",
-  "healthCheckPath": "/api/health",
-  "envVars": [
-    {
-      "key": "NODE_ENV",
-      "value": "production"
-    },
-    {
-      "key": "JWT_SECRET",
-      "value": "render-production-jwt-secret-key"
-    },
-    {
-      "key": "SETUP_KEY",
-      "value": "render-setup-key-production"
-    }
-  ],
-  "disk": {
-    "name": "data",
-    "mountPath": "/opt/render/project/src/data",
-    "sizeGB": 1
-  }
-}
+name: gohighlevel-clone
+type: web_service
+env: node
+buildCommand: ./.render/build.sh
+startCommand: ./.render/run.sh
+healthCheckPath: /api/health
+envVars:
+  - key: NODE_ENV
+    value: production
+  - key: JWT_SECRET
+    value: render-production-jwt-secret-key
+  - key: SETUP_KEY
+    value: render-setup-key-production
+disk:
+  name: data
+  mountPath: /opt/render/project/src/data
+  sizeGB: 1
