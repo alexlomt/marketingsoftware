@@ -24,10 +24,7 @@ services:
       sizeGB: 1
     autoDeploy: true
     
-  - type: postgres
-    name: crm-database
-    ipAllowList: []
-    plan: free
-    
 databases:
   - name: crm-database
+    plan: free
+    ipAllowList: []
