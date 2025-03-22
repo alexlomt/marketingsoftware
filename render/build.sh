@@ -1,17 +1,22 @@
 #!/bin/bash
 set -e
-# Render Build Script
+
+echo "Starting build process for CRM application..."
 
 # Install dependencies
-npm install
+echo "Installing dependencies..."
+npm ci
 
-# Install TypeScript dependencies explicitly
-npm install --save-dev typescript @types/node @types/react @types/react-dom
+# Run linting (optional)
+echo "Running linter..."
+npm run lint || true
 
-# Build the Next.js application
+# Build the application
+echo "Building the application..."
 npm run build
 
-# Create data directory for SQLite database
+# Create data directory if it doesn't exist
+echo "Setting up data directory..."
 mkdir -p data
 
 echo "Build completed successfully!"
