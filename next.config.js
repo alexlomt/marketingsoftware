@@ -1,4 +1,4 @@
-# Production Next.js configuration
+// Production Next.js configuration
 module.exports = {
   // Enable React strict mode for better development experience
   reactStrictMode: true,
