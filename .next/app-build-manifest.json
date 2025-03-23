@@ -1,0 +1,71 @@
+{
+  "pages": {
+    "/_not-found": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/_not-found-b37f96aa09da4b56.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/css/33ab35d0e0abb8b4.css",
+      "static/chunks/app/layout-65be672c96d0d0f6.js"
+    ],
+    "/appointments/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/appointments/page-fd54f11840a67800.js"
+    ],
+    "/contacts/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/contacts/page-b63640cd8cc16933.js"
+    ],
+    "/dashboard/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/dashboard/page-7238c41a70f85792.js"
+    ],
+    "/deals/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/deals/page-a9929b79478fe758.js"
+    ],
+    "/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/page-a620ef77257caf07.js"
+    ],
+    "/pipelines/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/pipelines/page-d7ace085f3d13dbf.js"
+    ],
+    "/forms/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/forms/page-1a518a2e3e8f65fb.js"
+    ],
+    "/workflows/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/workflows/page-544364ab8de21939.js"
+    ],
+    "/email-campaigns/page": [
+      "static/chunks/webpack-5945d2280fc57961.js",
+      "static/chunks/484-a4e50fa05806f3bc.js",
+      "static/chunks/main-app-1d88ea6df709c840.js",
+      "static/chunks/app/email-campaigns/page-a646d258af41b48e.js"
+    ]
+  }
+}
