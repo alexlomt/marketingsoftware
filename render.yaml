@@ -1,30 +1,36 @@
-services:
-  - type: web
-    name: crm-application
-    env: node
-    buildCommand: ./render/build.sh
-    startCommand: ./render/run.sh
-    healthCheckPath: /api/health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: JWT_SECRET
-        generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: RUN_MIGRATIONS
-        value: true
-      - key: CREATE_ADMIN
-        value: true
-      - key: NEXT_PUBLIC_APP_URL
-        sync: false
-    disk:
-      name: data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
-    autoDeploy: true
-    
-databases:
-  - name: crm-database
-    plan: free
-    ipAllowList: []
+{
+  "name": "Marketing Software CRM",
+  "env": {
+    "NODE_VERSION": "18.x",
+    "NPM_VERSION": "9.x"
+  },
+  "buildCommand": "chmod +x ./render/build.sh && ./render/build.sh",
+  "startCommand": "chmod +x ./render/run.sh && ./render/run.sh",
+  "envVarGroups": [
+    {
+      "name": "database",
+      "envVars": [
+        {
+          "key": "DATABASE_URL",
+          "value": "",
+          "isSecret": true
+        }
+      ]
+    },
+    {
+      "name": "authentication",
+      "envVars": [
+        {
+          "key": "JWT_SECRET",
+          "generateValue": true,
+          "isSecret": true
+        },
+        {
+          "key": "JWT_EXPIRES_IN",
+          "value": "7d"
+        }
+      ]
+    }
+  ],
+  "healthCheckPath": "/api/health"
+}
