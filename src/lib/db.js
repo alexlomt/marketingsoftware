@@ -1,78 +1,46 @@
 // Database configuration for Render deployment
-// This file replaces the Cloudflare D1 configuration with SQLite for Render
+// This file provides PostgreSQL support for Render
 
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import pg from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 
-let dbInstance = null;
+const { Pool } = pg;
+
+let dbPool = null;
 
 /**
- * Initialize the database
- * @returns {Promise<sqlite.Database>} SQLite database instance
+ * Initialize the database connection pool
+ * @returns {Promise<pg.Pool>} PostgreSQL connection pool
  */
 export async function initializeDatabase() {
-  if (dbInstance) {
-    return dbInstance;
+  if (dbPool) {
+    return dbPool;
   }
 
-  // Ensure the data directory exists
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-
-  // Open the database
-  dbInstance = await open({
-    filename: path.join(dataDir, 'gohighlevel.db'),
-    driver: sqlite3.Database
+  // Create a connection pool
+  dbPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
   });
 
-  // Apply migrations if needed
-  await applyMigrations(dbInstance);
+  // Test the connection
+  try {
+    const client = await dbPool.connect();
+    console.log('Successfully connected to PostgreSQL database');
+    client.release();
+  } catch (error) {
+    console.error('Failed to connect to PostgreSQL database:', error);
+    throw error;
+  }
 
-  return dbInstance;
+  return dbPool;
 }
 
 /**
- * Apply database migrations
- * @param {sqlite.Database} db - SQLite database instance
- * @returns {Promise<void>}
- */
-async function applyMigrations(db) {
-  // Check if migrations have been applied
-  const tableExists = await db.get(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
-  ).catch(() => null);
-
-  if (tableExists) {
-    return; // Migrations already applied
-  }
-
-  console.log('Applying database migrations...');
-  
-  // Read and execute the migration SQL
-  const migrationPath = path.join(process.cwd(), 'migrations', '0001_initial.sql');
-  const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-  
-  // Split the SQL into individual statements
-  const statements = migrationSQL.split(';').filter(stmt => stmt.trim());
-  
-  // Execute each statement
-  for (const statement of statements) {
-    if (statement.trim()) {
-      await db.exec(statement);
-    }
-  }
-  
-  console.log('Database migrations applied successfully');
-}
-
-/**
- * Get database instance
- * @returns {Promise<sqlite.Database>} SQLite database instance
+ * Get database connection pool
+ * @returns {Promise<pg.Pool>} PostgreSQL connection pool
  */
 export async function getDB() {
   return initializeDatabase();
@@ -80,70 +48,81 @@ export async function getDB() {
 
 /**
  * Execute a query and get a single row
- * @param {sqlite.Database} db - SQLite database instance
+ * @param {pg.Pool} db - PostgreSQL connection pool
  * @param {string} query - SQL query
  * @param {Array} params - Query parameters
  * @returns {Promise<Object>} Query result
  */
 export async function getRow(db, query, params = []) {
-  return db.get(query, params);
+  const result = await db.query(query, params);
+  return result.rows[0];
 }
 
 /**
  * Execute a query and get multiple rows
- * @param {sqlite.Database} db - SQLite database instance
+ * @param {pg.Pool} db - PostgreSQL connection pool
  * @param {string} query - SQL query
  * @param {Array} params - Query parameters
  * @returns {Promise<Array>} Query results
  */
 export async function getRows(db, query, params = []) {
-  return db.all(query, params);
+  const result = await db.query(query, params);
+  return result.rows;
 }
 
 /**
  * Insert a row into a table
- * @param {sqlite.Database} db - SQLite database instance
+ * @param {pg.Pool} db - PostgreSQL connection pool
  * @param {string} table - Table name
  * @param {Object} data - Row data
  * @returns {Promise<Object>} Insert result
  */
 export async function insertRow(db, table, data) {
   const columns = Object.keys(data).join(', ');
-  const placeholders = Object.keys(data).map(() => '?').join(', ');
+  const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(', ');
   const values = Object.values(data);
   
-  const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
-  return db.run(query, values);
+  const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *`;
+  const result = await db.query(query, values);
+  return result.rows[0];
 }
 
 /**
  * Update rows in a table
- * @param {sqlite.Database} db - SQLite database instance
+ * @param {pg.Pool} db - PostgreSQL connection pool
  * @param {string} table - Table name
  * @param {Object} data - Update data
- * @param {string} whereClause - WHERE clause
+ * @param {string} whereClause - WHERE clause (use $n for parameters)
  * @param {Array} whereParams - WHERE parameters
  * @returns {Promise<Object>} Update result
  */
 export async function updateRow(db, table, data, whereClause, whereParams = []) {
-  const setClause = Object.keys(data).map(key => `${key} = ?`).join(', ');
-  const values = [...Object.values(data), ...whereParams];
+  const setClause = Object.keys(data).map((key, i) => `${key} = $${i + 1}`).join(', ');
+  const values = [...Object.values(data)];
   
-  const query = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
-  return db.run(query, values);
+  // Adjust the parameter indices in the WHERE clause
+  let adjustedWhereClause = whereClause;
+  for (let i = 0; i < whereParams.length; i++) {
+    adjustedWhereClause = adjustedWhereClause.replace(`$${i + 1}`, `$${values.length + i + 1}`);
+  }
+  
+  const query = `UPDATE ${table} SET ${setClause} WHERE ${adjustedWhereClause} RETURNING *`;
+  const result = await db.query(query, [...values, ...whereParams]);
+  return result.rows;
 }
 
 /**
  * Delete rows from a table
- * @param {sqlite.Database} db - SQLite database instance
+ * @param {pg.Pool} db - PostgreSQL connection pool
  * @param {string} table - Table name
- * @param {string} whereClause - WHERE clause
+ * @param {string} whereClause - WHERE clause (use $n for parameters)
  * @param {Array} whereParams - WHERE parameters
  * @returns {Promise<Object>} Delete result
  */
 export async function deleteRow(db, table, whereClause, whereParams = []) {
-  const query = `DELETE FROM ${table} WHERE ${whereClause}`;
-  return db.run(query, whereParams);
+  const query = `DELETE FROM ${table} WHERE ${whereClause} RETURNING *`;
+  const result = await db.query(query, whereParams);
+  return result.rows;
 }
 
 /**
@@ -153,3 +132,17 @@ export async function deleteRow(db, table, whereClause, whereParams = []) {
 export function generateId() {
   return uuidv4();
 }
+
+// Export a db object for compatibility with existing code
+export const db = {
+  query: async (text, params) => {
+    const pool = await initializeDatabase();
+    return pool.query(text, params);
+  },
+  end: async () => {
+    if (dbPool) {
+      await dbPool.end();
+      dbPool = null;
+    }
+  }
+};
