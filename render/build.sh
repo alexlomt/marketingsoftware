@@ -14,12 +14,16 @@ fi
 echo "Installing dependencies..."
 npm install --no-shrinkwrap
 
-# Remove tsconfig.json if TypeScript is causing issues
-echo "Checking for TypeScript configuration..."
+# Remove TypeScript configuration completely
+echo "Removing TypeScript configuration..."
 if [ -f tsconfig.json ]; then
-  echo "Found tsconfig.json, backing it up..."
-  mv tsconfig.json tsconfig.json.bak
+  echo "Found tsconfig.json, removing it..."
+  rm -f tsconfig.json
 fi
+
+# Remove any TypeScript files that might be causing issues
+find ./src -name "*.ts" -type f -delete
+find ./src -name "*.tsx" -type f -delete
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
