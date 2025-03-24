@@ -51,7 +51,7 @@ module.exports = {
         source: '/api/:path*',
         headers: [
           {
-            key: 'x-middleware-preflight',
+            key: 'x-middleware-prefetch',
             value: 'skip'
           }
         ]
@@ -90,5 +90,16 @@ module.exports = {
       bodySizeLimit: '2mb',
     },
     instrumentationHook: false,
+    // Explicitly disable Edge Runtime
+    runtime: 'nodejs',
   },
+  
+  // Explicitly set server components to use Node.js runtime
+  serverRuntimeConfig: {
+    runtime: 'nodejs'
+  },
+  
+  // Disable middleware runtime
+  skipMiddlewareUrlNormalize: true,
+  skipTrailingSlashRedirect: true,
 };
