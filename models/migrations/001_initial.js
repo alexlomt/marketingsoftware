@@ -24,12 +24,11 @@ exports.up = async (db) => {
   await db.query(`
     CREATE TABLE IF NOT EXISTS form_submissions (
       id TEXT PRIMARY KEY,
-      form_id TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+      form_id TEXT NOT NULL,
       data TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL,
       ip_address TEXT,
-      status TEXT NOT NULL,
-      CONSTRAINT fk_form FOREIGN KEY (form_id) REFERENCES forms(id)
+      status TEXT NOT NULL
     )
   `);
 
