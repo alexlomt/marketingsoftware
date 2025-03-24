@@ -1,105 +1,181 @@
 /**
- * Analytics model for tracking user interactions and providing insights
+ * Analytics model for data analysis and reporting
  */
 
-import { db } from "@/lib/db";
+import { db } from '../lib/db';
 
 /**
- * Track a user event
- * @param {string} userId - The ID of the user
- * @param {string} eventType - Type of event (e.g., 'page_view', 'click', 'form_submit')
- * @param {Object} eventData - Additional event data
- * @returns {Promise<Object>} Created event object
- */
-export async function trackEvent(userId, eventType, eventData = {}) {
-  const event = {
-    user_id: userId,
-    event_type: eventType,
-    event_data: eventData,
-    timestamp: new Date().toISOString(),
-  };
-
-  const result = await db.query(
-    "INSERT INTO analytics_events (user_id, event_type, event_data, timestamp) VALUES ($1, $2, $3, $4) RETURNING *",
-    [event.user_id, event.event_type, event.event_data, event.timestamp]
-  );
-
-  return result.rows[0];
-}
-
-/**
- * Get user activity summary
- * @param {string} userId - The ID of the user
- * @param {Object} options - Query options (e.g., timeframe)
- * @returns {Promise<Object>} Activity summary
- */
-export async function getUserActivity(userId, options = {}) {
-  const { startDate, endDate } = options;
-
-  const query = {
-    text: "SELECT event_type, COUNT(*) as count FROM analytics_events WHERE user_id = $1",
-    values: [userId],
-  };
-
-  if (startDate && endDate) {
-    query.text += " AND timestamp BETWEEN $2 AND $3";
-    query.values.push(startDate, endDate);
-  }
-
-  query.text += " GROUP BY event_type";
-
-  const result = await db.query(query.text, query.values);
-  return result.rows;
-}
-
-/**
- * Get organization-wide analytics
- * @param {string} organizationId - The ID of the organization
+ * Get contacts statistics
  * @param {Object} options - Query options
- * @returns {Promise<Object>} Organization analytics
+ * @returns {Promise<Object>} Contact statistics
  */
-export async function getOrganizationAnalytics(organizationId, options = {}) {
-  const { startDate, endDate, eventTypes = [] } = options;
-
+export async function getContactsStats(options = {}) {
+  const { userId, period = 'month', startDate, endDate } = options;
+  
+  // Define date range
+  const dateFilter = getDateFilter(period, startDate, endDate);
+  
+  // Base query with date filter
   let query = `
     SELECT 
-      e.event_type,
-      COUNT(*) as event_count,
-      COUNT(DISTINCT e.user_id) as unique_users
-    FROM analytics_events e
-    JOIN users u ON e.user_id = u.id
-    WHERE u.organization_id = $1
+      COUNT(*) as total,
+      COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
+      COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive,
+      COUNT(CASE WHEN created_at >= $1 THEN 1 END) as new
   `;
-
-  const values = [organizationId];
-  let paramCount = 1;
-
-  if (startDate && endDate) {
-    query += ` AND e.timestamp BETWEEN $${++paramCount} AND $${++paramCount}`;
-    values.push(startDate, endDate);
+  
+  const params = [dateFilter.startDate];
+  
+  // Add FROM clause
+  query += ` FROM contacts`;
+  
+  // Add WHERE clause if userId is provided
+  if (userId) {
+    query += ` WHERE user_id = $2`;
+    params.push(userId);
   }
-
-  if (eventTypes.length > 0) {
-    query += ` AND e.event_type = ANY($${++paramCount})`;
-    values.push(eventTypes);
-  }
-
-  query += " GROUP BY e.event_type";
-
-  const result = await db.query(query, values);
-  return result.rows;
+  
+  const result = await db.query(query, params);
+  return result.rows[0] || { total: 0, active: 0, inactive: 0, new: 0 };
 }
 
 /**
- * Delete old analytics data
- * @param {number} daysToKeep - Number of days of data to retain
- * @returns {Promise<void>}
+ * Get deals statistics
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>} Deal statistics
  */
-export async function cleanupOldAnalytics(daysToKeep = 90) {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
-  await db.query("DELETE FROM analytics_events WHERE timestamp < $1", [
-    cutoffDate.toISOString(),
-  ]);
+export async function getDealsStats(options = {}) {
+  const { userId, period = 'month', startDate, endDate } = options;
+  
+  // Define date range
+  const dateFilter = getDateFilter(period, startDate, endDate);
+  
+  // Base query with date filter
+  let query = `
+    SELECT 
+      COUNT(*) as total,
+      COUNT(CASE WHEN status = 'won' THEN 1 END) as won,
+      COUNT(CASE WHEN status = 'lost' THEN 1 END) as lost,
+      COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
+      SUM(CASE WHEN status = 'won' THEN value ELSE 0 END) as revenue,
+      AVG(CASE WHEN status = 'won' THEN value ELSE NULL END) as avg_deal_size
+  `;
+  
+  const params = [dateFilter.startDate];
+  
+  // Add FROM clause
+  query += ` FROM deals`;
+  
+  // Add WHERE clause if userId is provided
+  if (userId) {
+    query += ` WHERE user_id = $2`;
+    params.push(userId);
+  }
+  
+  const result = await db.query(query, params);
+  return result.rows[0] || { 
+    total: 0, 
+    won: 0, 
+    lost: 0, 
+    open: 0, 
+    revenue: 0, 
+    avg_deal_size: 0 
+  };
 }
+
+/**
+ * Get email campaign statistics
+ * @param {Object} options - Query options
+ * @returns {Promise<Object>} Email campaign statistics
+ */
+export async function getEmailCampaignStats(options = {}) {
+  const { userId, period = 'month', startDate, endDate } = options;
+  
+  // Define date range
+  const dateFilter = getDateFilter(period, startDate, endDate);
+  
+  // Base query with date filter
+  let query = `
+    SELECT 
+      COUNT(*) as total,
+      SUM(sent) as sent,
+      SUM(opened) as opened,
+      SUM(clicked) as clicked,
+      CASE WHEN SUM(sent) > 0 THEN ROUND((SUM(opened)::numeric / SUM(sent)) * 100, 2) ELSE 0 END as open_rate,
+      CASE WHEN SUM(opened) > 0 THEN ROUND((SUM(clicked)::numeric / SUM(opened)) * 100, 2) ELSE 0 END as click_rate
+  `;
+  
+  const params = [dateFilter.startDate];
+  
+  // Add FROM clause
+  query += ` FROM email_campaigns`;
+  
+  // Add WHERE clause if userId is provided
+  if (userId) {
+    query += ` WHERE user_id = $2`;
+    params.push(userId);
+  }
+  
+  const result = await db.query(query, params);
+  return result.rows[0] || { 
+    total: 0, 
+    sent: 0, 
+    opened: 0, 
+    clicked: 0, 
+    open_rate: 0, 
+    click_rate: 0 
+  };
+}
+
+/**
+ * Get date filter based on period
+ * @param {string} period - Time period (day, week, month, year)
+ * @param {string} startDate - Custom start date
+ * @param {string} endDate - Custom end date
+ * @returns {Object} Date filter object
+ */
+function getDateFilter(period, startDate, endDate) {
+  const now = new Date();
+  let start = new Date();
+  
+  if (startDate && endDate) {
+    // Custom date range
+    return {
+      startDate: new Date(startDate),
+      endDate: new Date(endDate)
+    };
+  }
+  
+  // Predefined periods
+  switch (period) {
+    case 'day':
+      start.setDate(start.getDate() - 1);
+      break;
+    case 'week':
+      start.setDate(start.getDate() - 7);
+      break;
+    case 'month':
+      start.setMonth(start.getMonth() - 1);
+      break;
+    case 'quarter':
+      start.setMonth(start.getMonth() - 3);
+      break;
+    case 'year':
+      start.setFullYear(start.getFullYear() - 1);
+      break;
+    default:
+      start.setMonth(start.getMonth() - 1); // Default to month
+  }
+  
+  return {
+    startDate: start,
+    endDate: now
+  };
+}
+
+// Export all functions
+export default {
+  getContactsStats,
+  getDealsStats,
+  getEmailCampaignStats
+};
