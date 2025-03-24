@@ -1,4 +1,3 @@
-// middleware.js
 import { NextResponse } from 'next/server';
 
 // This middleware will run for all routes
