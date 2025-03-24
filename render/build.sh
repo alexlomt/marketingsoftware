@@ -24,16 +24,19 @@ NODE_ENV=production
 EOL
 fi
 
-# Skip migrations for now until db.js is fixed
-echo "Skipping database migrations for now..."
+# Run migrations
+echo "Running database migrations..."
+node scripts/migrate.js || echo "Migrations skipped or failed, continuing build..."
 
 # Build the application
 echo "Building the application..."
 echo "Node version: $(node -v)"
 echo "NPM version: $(npm -v)"
-echo "Installing Next.js..."
-npm install next@latest react react-dom
 echo "Running build..."
-npx next build
+npm run build
+
+# Create data directory if it doesn't exist
+echo "Setting up data directory..."
+mkdir -p data
 
 echo "Build completed successfully!"
