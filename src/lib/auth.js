@@ -1,10 +1,11 @@
-export const runtime = 'nodejs';
-
 // Authentication utilities
 
 import { hash, compare } from 'bcryptjs';
 import { sign, verify } from 'jsonwebtoken';
 import { getRow, insertRow, updateRow } from './db';
+
+// Add this line to indicate Node.js runtime for Next.js
+export const runtime = 'nodejs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const SALT_ROUNDS = 10;
