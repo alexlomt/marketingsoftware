@@ -24,39 +24,128 @@ export function middleware(request) {
     return NextResponse.next();
   }
   
-  // Get auth token from cookie
-  const authToken = request.cookies.get('auth_token')?.value;
-  
-  // If no token is present, redirect to login or return unauthorized
-  if (!authToken) {
-    // For API routes, return 401 Unauthorized
-    if (request.nextUrl.pathname.startsWith('/api/')) {
+  // For API routes, add header to skip Edge Runtime
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const response = NextResponse.next();
+    response.headers.set('x-middleware-preflight', 'skip');
+    
+    // Get auth token from cookie
+    const authToken = request.cookies.get('auth_token')?.value;
+    
+    // If no token is present, return unauthorized
+    if (!authToken) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        { status: 401, headers: { 'x-middleware-preflight': 'skip' } }
       );
     }
     
-    // For page routes, redirect to login
+    // Verify token
+    try {
+      const payload = verifyToken(authToken);
+      
+      // If token is invalid or expired, return unauthorized
+      if (!payload) {
+        return NextResponse.json(
+          { error: 'Invalid or expired token' },
+          { status: 401, headers: { 'x-middleware-preflight': 'skip' } }
+        );
+      }
+      
+      // Check role-based access for admin-only routes
+      const adminRoutes = ['/api/admin/'];
+      
+      const isAdminRoute = adminRoutes.some(route => 
+        request.nextUrl.pathname.startsWith(route)
+      );
+      
+      if (isAdminRoute && payload.role !== 'admin') {
+        return NextResponse.json(
+          { error: 'Access denied' },
+          { status: 403, headers: { 'x-middleware-preflight': 'skip' } }
+        );
+      }
+      
+      // Add user info to request headers for use in API routes
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-user-id', payload.id);
+      requestHeaders.set('x-user-role', payload.role);
+      requestHeaders.set('x-organization-id', payload.organization_id);
+      
+      // Continue with the request
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+        headers: {
+          'x-middleware-preflight': 'skip'
+        }
+      });
+    } catch (error) {
+      // Handle token verification errors
+      return NextResponse.json(
+        { error: 'Authentication error' },
+        { status: 401, headers: { 'x-middleware-preflight': 'skip' } }
+      );
+    }
+  }
+  
+  // For non-API routes, continue with existing logic
+  
+  // Get auth token from cookie
+  const authToken = request.cookies.get('auth_token')?.value;
+  
+  // If no token is present, redirect to login
+  if (!authToken) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
   
   // Verify token
-  const payload = verifyToken(authToken);
-  
-  // If token is invalid or expired, clear cookie and redirect to login
-  if (!payload) {
-    // For API routes, return 401 Unauthorized
-    if (request.nextUrl.pathname.startsWith('/api/')) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      );
+  try {
+    const payload = verifyToken(authToken);
+    
+    // If token is invalid or expired, clear cookie and redirect to login
+    if (!payload) {
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      response.cookies.set({
+        name: 'auth_token',
+        value: '',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 0 // Expire immediately
+      }) ;
+      return response;
     }
     
-    // For page routes, redirect to login
+    // Check role-based access for admin-only routes
+    const adminRoutes = ['/admin/'];
+    
+    const isAdminRoute = adminRoutes.some(route => 
+      request.nextUrl.pathname.startsWith(route)
+    );
+    
+    if (isAdminRoute && payload.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    
+    // Add user info to request headers
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-id', payload.id);
+    requestHeaders.set('x-user-role', payload.role);
+    requestHeaders.set('x-organization-id', payload.organization_id);
+    
+    // Continue with the request
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      }
+    });
+  } catch (error) {
+    // Handle token verification errors
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.set({
       name: 'auth_token',
@@ -66,45 +155,9 @@ export function middleware(request) {
       sameSite: 'strict',
       path: '/',
       maxAge: 0 // Expire immediately
-    });
+    }) ;
     return response;
   }
-  
-  // Check role-based access for admin-only routes
-  const adminRoutes = [
-    '/api/admin/',
-    '/admin/'
-  ];
-  
-  const isAdminRoute = adminRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
-  );
-  
-  if (isAdminRoute && payload.role !== 'admin') {
-    // For API routes, return 403 Forbidden
-    if (request.nextUrl.pathname.startsWith('/api/')) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
-    
-    // For page routes, redirect to dashboard
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-  
-  // Add user info to request headers for use in API routes
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-user-id', payload.id);
-  requestHeaders.set('x-user-role', payload.role);
-  requestHeaders.set('x-organization-id', payload.organization_id);
-  
-  // Continue with the request
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
 }
 
 // Configure middleware to run on specific paths
