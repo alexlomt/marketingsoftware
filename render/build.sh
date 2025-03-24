@@ -3,9 +3,9 @@ set -e
 
 echo "Starting build process for CRM application..."
 
-# Install dependencies
+# Install dependencies with explicit npm ci
 echo "Installing dependencies..."
-npm install
+npm ci || npm install
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
@@ -24,16 +24,16 @@ NODE_ENV=production
 EOL
 fi
 
-# Run migrations
-echo "Running database migrations..."
-npm run migrate:production || echo "Migrations skipped or failed, continuing build..."
+# Skip migrations for now until db.js is fixed
+echo "Skipping database migrations for now..."
 
 # Build the application
 echo "Building the application..."
-npm run build
-
-# Create data directory if it doesn't exist
-echo "Setting up data directory..."
-mkdir -p data
+echo "Node version: $(node -v)"
+echo "NPM version: $(npm -v)"
+echo "Installing Next.js..."
+npm install next@latest react react-dom
+echo "Running build..."
+npx next build
 
 echo "Build completed successfully!"
