@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 // Database configuration for Render deployment
 // This file provides PostgreSQL support for Render
 const pg = require('pg');
