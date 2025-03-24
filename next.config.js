@@ -7,7 +7,6 @@ module.exports = {
   images: {
     domains: ['localhost'],
     // Add any other domains you need to load images from
-    // For example: 'your-s3-bucket.s3.amazonaws.com'
   },
   
   // Configure environment variables that should be available on the client
@@ -17,18 +16,6 @@ module.exports = {
   
   // Configure build output
   output: 'standalone',
-  
-  // Disable Edge Runtime for API routes
-  experimental: {
-    runtime: 'nodejs',
-  },
-  
-  // Configure Node.js packages that should not be bundled
-  serverComponentsExternalPackages: [
-    'pg',
-    'bcryptjs',
-    'jsonwebtoken'
-  ],
   
   // Configure headers for security and to skip Edge Runtime
   async headers() {
@@ -95,5 +82,13 @@ module.exports = {
     }
     
     return config;
+  },
+  
+  // Disable Edge Runtime for API routes using correct Next.js 14.1.0 syntax
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+    instrumentationHook: false,
   },
 };
