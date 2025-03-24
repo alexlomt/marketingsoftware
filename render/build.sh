@@ -14,10 +14,12 @@ fi
 echo "Installing dependencies..."
 npm install --no-shrinkwrap
 
-# Install TypeScript packages globally to ensure they're available
-echo "Installing TypeScript packages..."
-npm install --global typescript
-npm install --save-dev typescript@5.3.3 @types/react@18.2.45 @types/node@20.10.5
+# Remove tsconfig.json if TypeScript is causing issues
+echo "Checking for TypeScript configuration..."
+if [ -f tsconfig.json ]; then
+  echo "Found tsconfig.json, backing it up..."
+  mv tsconfig.json tsconfig.json.bak
+fi
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
