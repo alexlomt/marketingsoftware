@@ -4,57 +4,15 @@
     "NODE_VERSION": "18.x",
     "NPM_VERSION": "9.x",
     "NODE_ENV": "production",
-    "PORT": "10000"
+    "PORT": "10000",
+    "DATABASE_URL": "postgresql://marketingdb_0a9i_user:UGWqFtrp6iiSqqRrl6fUGnpntfbsZAUn@dpg-cvgb76lrie7s73bnuck0-a/marketingdb_0a9i",
+    "JWT_SECRET": "3e9af42b7820d384b4f8b0e5d91b0e1a87654321",
+    "JWT_EXPIRES_IN": "7d",
+    "ANALYTICS_ENABLED": "true",
+    "LOG_LEVEL": "info"
   },
   "buildCommand": "chmod +x ./render/build.sh && ./render/build.sh",
   "startCommand": "chmod +x ./render/run.sh && ./render/run.sh",
-  "envVarGroups": [
-    {
-      "name": "database",
-      "envVars": [
-        {
-          "key": "DATABASE_URL",
-          "value": "",
-          "isSecret": true
-        }
-      ]
-    },
-    {
-      "name": "authentication",
-      "envVars": [
-        {
-          "key": "JWT_SECRET",
-          "generateValue": true,
-          "isSecret": true
-        },
-        {
-          "key": "JWT_EXPIRES_IN",
-          "value": "7d"
-        }
-      ]
-    },
-    {
-      "name": "application",
-      "envVars": [
-        {
-          "key": "NEXT_PUBLIC_APP_URL",
-          "sync": "URL"
-        },
-        {
-          "key": "API_URL",
-          "sync": "URL"
-        },
-        {
-          "key": "ANALYTICS_ENABLED",
-          "value": "true"
-        },
-        {
-          "key": "LOG_LEVEL",
-          "value": "info"
-        }
-      ]
-    }
-  ],
   "healthCheckPath": "/api/health",
   "autoDeploy": true,
   "disk": {
