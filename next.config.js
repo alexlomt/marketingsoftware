@@ -44,17 +44,12 @@ module.exports = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-        ],
-      },
-      {
-        // Skip Edge Runtime for API routes
-        source: '/api/:path*',
-        headers: [
+          // Add header to skip middleware for all routes
           {
             key: 'x-middleware-prefetch',
             value: 'skip'
           }
-        ]
+        ],
       }
     ];
   },
@@ -84,15 +79,18 @@ module.exports = {
     return config;
   },
   
-  // Disable Edge Runtime for API routes using correct Next.js 14.1.0 syntax
+  // Disable experimental features that might cause issues
   experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
+    serverActions: false,
     instrumentationHook: false,
   },
   
   // Disable middleware runtime
   skipMiddlewareUrlNormalize: true,
   skipTrailingSlashRedirect: true,
+  
+  // Explicitly set server components to use Node.js runtime
+  serverComponents: {
+    runtime: 'nodejs'
+  }
 }
