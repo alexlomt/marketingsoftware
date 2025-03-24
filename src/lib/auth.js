@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 // Authentication utilities
 
 import { hash, compare } from 'bcryptjs';
