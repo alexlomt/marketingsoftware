@@ -14,16 +14,20 @@ fi
 echo "Installing dependencies..."
 npm install --no-shrinkwrap
 
-# Remove TypeScript configuration completely
+# Remove TypeScript configuration
 echo "Removing TypeScript configuration..."
 if [ -f tsconfig.json ]; then
   echo "Found tsconfig.json, removing it..."
   rm -f tsconfig.json
 fi
 
-# Remove any TypeScript files that might be causing issues
-find ./src -name "*.ts" -type f -delete
-find ./src -name "*.tsx" -type f -delete
+# Convert TypeScript files to JSX
+echo "Converting TypeScript files to JSX..."
+find ./src -name "*.tsx" -type f | while read -r file; do
+  newfile="${file%.tsx}.jsx"
+  cp "$file" "$newfile"
+  echo "Converted $file to $newfile"
+done
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
