@@ -81,16 +81,10 @@ module.exports = {
   
   // Disable experimental features that might cause issues
   experimental: {
-    serverActions: false,
     instrumentationHook: false,
   },
   
   // Disable middleware runtime
   skipMiddlewareUrlNormalize: true,
-  skipTrailingSlashRedirect: true,
-  
-  // Explicitly set server components to use Node.js runtime
-  serverComponents: {
-    runtime: 'nodejs'
-  }
+  skipTrailingSlashRedirect: true
 }
