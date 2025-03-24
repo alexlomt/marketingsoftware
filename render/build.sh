@@ -10,13 +10,24 @@ if [ -f .babelrc ]; then
   rm -f .babelrc
 fi
 
-# Install dependencies with --no-shrinkwrap to ignore package-lock.json
+# Install dependencies with production flag to ensure all dependencies are installed
 echo "Installing dependencies..."
-npm install --no-shrinkwrap
+npm ci --production=false
 
 # Install TypeScript packages explicitly with exact versions
 echo "Installing TypeScript packages..."
 npm install --save-dev typescript@5.3.3 @types/react@18.2.45 @types/node@20.10.5
+
+# Verify TypeScript installation
+echo "Verifying TypeScript installation..."
+if [ -f ./node_modules/.bin/tsc ]; then
+  echo "TypeScript successfully installed"
+  ./node_modules/.bin/tsc --version
+else
+  echo "TypeScript installation failed, installing again..."
+  npm install --no-save typescript@5.3.3
+  ./node_modules/.bin/tsc --version
+fi
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
@@ -44,7 +55,7 @@ echo "Building the application..."
 echo "Node version: $(node -v)"
 echo "NPM version: $(npm -v)"
 echo "Running build..."
-npm run build
+NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Create data directory if it doesn't exist
 echo "Setting up data directory..."
