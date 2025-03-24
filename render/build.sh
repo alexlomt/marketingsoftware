@@ -10,9 +10,9 @@ if [ -f .babelrc ]; then
   rm -f .babelrc
 fi
 
-# Install dependencies with production flag to ensure all dependencies are installed
+# Install dependencies with --no-shrinkwrap to ignore package-lock.json
 echo "Installing dependencies..."
-npm ci --production=false
+npm install --no-shrinkwrap
 
 # Install TypeScript packages explicitly with exact versions
 echo "Installing TypeScript packages..."
