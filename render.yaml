@@ -2,7 +2,9 @@
   "name": "Marketing Software CRM",
   "env": {
     "NODE_VERSION": "18.x",
-    "NPM_VERSION": "9.x"
+    "NPM_VERSION": "9.x",
+    "NODE_ENV": "production",
+    "PORT": "10000"
   },
   "buildCommand": "chmod +x ./render/build.sh && ./render/build.sh",
   "startCommand": "chmod +x ./render/run.sh && ./render/run.sh",
@@ -30,7 +32,34 @@
           "value": "7d"
         }
       ]
+    },
+    {
+      "name": "application",
+      "envVars": [
+        {
+          "key": "NEXT_PUBLIC_APP_URL",
+          "sync": "URL"
+        },
+        {
+          "key": "API_URL",
+          "sync": "URL"
+        },
+        {
+          "key": "ANALYTICS_ENABLED",
+          "value": "true"
+        },
+        {
+          "key": "LOG_LEVEL",
+          "value": "info"
+        }
+      ]
     }
   ],
-  "healthCheckPath": "/api/health"
+  "healthCheckPath": "/api/health",
+  "autoDeploy": true,
+  "disk": {
+    "name": "data",
+    "mountPath": "/var/data",
+    "sizeGB": 1
+  }
 }
