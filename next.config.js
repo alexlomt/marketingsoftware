@@ -1,6 +1,5 @@
-// Production Next.js configuration
-module.exports = {
-  // Enable React strict mode for better development experience
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   
   // Configure image optimization
@@ -17,7 +16,7 @@ module.exports = {
   // Configure build output
   output: 'standalone',
   
-  // Configure headers for security and to skip Edge Runtime
+  // Configure headers for security
   async headers() {
     return [
       {
@@ -44,11 +43,6 @@ module.exports = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-          // Add header to skip middleware for all routes
-          {
-            key: 'x-middleware-prefetch',
-            value: 'skip'
-          }
         ],
       }
     ];
@@ -76,6 +70,16 @@ module.exports = {
       };
     }
     
+    // Ignore all warnings related to Edge Runtime
+    config.ignoreWarnings = [
+      { module: /node_modules\/bcryptjs/ },
+      { module: /node_modules\/jsonwebtoken/ },
+      { module: /node_modules\/jws/ },
+      { module: /node_modules\/pg/ },
+      { module: /node_modules\/pgpass/ },
+      { message: /Edge Runtime/ },
+    ];
+    
     return config;
   },
   
@@ -83,8 +87,6 @@ module.exports = {
   experimental: {
     instrumentationHook: false,
   },
-  
-  // Disable middleware runtime
-  skipMiddlewareUrlNormalize: true,
-  skipTrailingSlashRedirect: true
 }
+
+module.exports = nextConfig
