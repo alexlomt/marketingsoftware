@@ -103,6 +103,37 @@ export async function getFormsByUserId(userId, options = {}) {
 }
 
 /**
+ * Get forms by organization
+ * @param {string} organizationId - Organization ID
+ * @param {Object} options - Query options
+ * @returns {Promise<Array>} Forms
+ */
+export async function getFormsByOrganization(organizationId, options = {}) {
+  const { limit = 100, offset = 0, status = 'active' } = options;
+  
+  const query = `
+    SELECT f.* FROM forms f
+    JOIN users u ON f.user_id = u.id
+    WHERE u.organization_id = $1 AND f.status = $2
+    ORDER BY f.updated_at DESC
+    LIMIT $3 OFFSET $4
+  `;
+  
+  const result = await db.query(query, [organizationId, status, limit, offset]);
+  
+  // Parse JSON fields
+  return result.rows.map(form => {
+    try {
+      form.fields = JSON.parse(form.fields);
+      form.settings = JSON.parse(form.settings);
+    } catch (error) {
+      console.error('Error parsing form JSON fields:', error);
+    }
+    return form;
+  });
+}
+
+/**
  * Update a form
  * @param {string} id - Form ID
  * @param {Object} formData - Updated form data
@@ -240,7 +271,7 @@ export async function getFormSubmissions(formId, options = {}) {
  * @param {string} id - Submission ID
  * @returns {Promise<Object>} Submission data
  */
-export async function getSubmissionById(id) {
+export async function getFormSubmissionById(id) {
   const query = 'SELECT * FROM form_submissions WHERE id = $1';
   const result = await db.query(query, [id]);
   
@@ -264,9 +295,10 @@ export default {
   createForm,
   getFormById,
   getFormsByUserId,
+  getFormsByOrganization,
   updateForm,
   deleteForm,
   submitForm,
   getFormSubmissions,
-  getSubmissionById
+  getFormSubmissionById
 };
