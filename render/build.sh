@@ -3,7 +3,7 @@ set -e
 
 echo "Starting build process for CRM application..."
 
-# Install dependencies with explicit npm ci
+# Install dependencies with --no-shrinkwrap to ignore package-lock.json
 echo "Installing dependencies..."
 npm install --no-shrinkwrap
 
