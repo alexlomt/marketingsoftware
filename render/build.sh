@@ -7,6 +7,10 @@ echo "Starting build process for CRM application..."
 echo "Installing dependencies..."
 npm install --no-shrinkwrap
 
+# Install TypeScript packages explicitly
+echo "Installing TypeScript packages..."
+npm install --save-dev typescript @types/react @types/node
+
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
   echo "Creating default .env file..."
