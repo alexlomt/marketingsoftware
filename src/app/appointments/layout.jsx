@@ -1,7 +1,9 @@
 export default function AppointmentsLayout({ children }) {
   return (
-    <div>
-      {children}
+    <div className="appointments-container">
+      <div className="appointments-content">
+        {children}
+      </div>
     </div>
   );
 }
