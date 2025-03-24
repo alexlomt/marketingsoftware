@@ -14,8 +14,9 @@ fi
 echo "Installing dependencies..."
 npm install --no-shrinkwrap
 
-# Install TypeScript packages explicitly with exact versions
+# Install TypeScript packages globally to ensure they're available
 echo "Installing TypeScript packages..."
+npm install --global typescript
 npm install --save-dev typescript@5.3.3 @types/react@18.2.45 @types/node@20.10.5
 
 # Create .env file if it doesn't exist
