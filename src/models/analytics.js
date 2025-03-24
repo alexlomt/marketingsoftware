@@ -2,14 +2,14 @@
  * Analytics model for data analysis and reporting
  */
 
-import { db } from '../lib/db';
+const { db } = require('../lib/db');
 
 /**
  * Get contacts statistics
  * @param {Object} options - Query options
  * @returns {Promise<Object>} Contact statistics
  */
-export async function getContactsStats(options = {}) {
+async function getContactsStats(options = {}) {
   const { userId, period = 'month', startDate, endDate } = options;
   
   // Define date range
@@ -44,7 +44,7 @@ export async function getContactsStats(options = {}) {
  * @param {Object} options - Query options
  * @returns {Promise<Object>} Deal statistics
  */
-export async function getDealsStats(options = {}) {
+async function getDealsStats(options = {}) {
   const { userId, period = 'month', startDate, endDate } = options;
   
   // Define date range
@@ -88,7 +88,7 @@ export async function getDealsStats(options = {}) {
  * @param {Object} options - Query options
  * @returns {Promise<Object>} Email campaign statistics
  */
-export async function getEmailCampaignStats(options = {}) {
+async function getEmailCampaignStats(options = {}) {
   const { userId, period = 'month', startDate, endDate } = options;
   
   // Define date range
@@ -173,8 +173,7 @@ function getDateFilter(period, startDate, endDate) {
   };
 }
 
-// Export all functions
-export default {
+module.exports = {
   getContactsStats,
   getDealsStats,
   getEmailCampaignStats
