@@ -18,17 +18,6 @@ npm install --no-shrinkwrap
 echo "Installing TypeScript packages..."
 npm install --save-dev typescript@5.3.3 @types/react@18.2.45 @types/node@20.10.5
 
-# Verify TypeScript installation without checking for the binary
-echo "Verifying TypeScript installation..."
-if [ -d "./node_modules/typescript" ]; then
-  echo "TypeScript successfully installed"
-  npx tsc --version
-else
-  echo "TypeScript installation failed, installing again..."
-  npm install --no-save typescript@5.3.3
-  npx tsc --version
-fi
-
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
   echo "Creating default .env file..."
