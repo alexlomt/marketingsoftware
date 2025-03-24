@@ -1,10 +1,9 @@
 // Database configuration for Render deployment
 // This file provides PostgreSQL support for Render
-
-import pg from 'pg';
-import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import path from 'path';
+const pg = require('pg');
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
 
 const { Pool } = pg;
 
@@ -14,7 +13,7 @@ let dbPool = null;
  * Initialize the database connection pool
  * @returns {Promise<pg.Pool>} PostgreSQL connection pool
  */
-export async function initializeDatabase() {
+async function initializeDatabase() {
   if (dbPool) {
     return dbPool;
   }
@@ -42,7 +41,7 @@ export async function initializeDatabase() {
  * Get database connection pool
  * @returns {Promise<pg.Pool>} PostgreSQL connection pool
  */
-export async function getDB() {
+async function getDB() {
   return initializeDatabase();
 }
 
@@ -53,7 +52,7 @@ export async function getDB() {
  * @param {Array} params - Query parameters
  * @returns {Promise<Object>} Query result
  */
-export async function getRow(db, query, params = []) {
+async function getRow(db, query, params = []) {
   const result = await db.query(query, params);
   return result.rows[0];
 }
@@ -65,7 +64,7 @@ export async function getRow(db, query, params = []) {
  * @param {Array} params - Query parameters
  * @returns {Promise<Array>} Query results
  */
-export async function getRows(db, query, params = []) {
+async function getRows(db, query, params = []) {
   const result = await db.query(query, params);
   return result.rows;
 }
@@ -77,7 +76,7 @@ export async function getRows(db, query, params = []) {
  * @param {Object} data - Row data
  * @returns {Promise<Object>} Insert result
  */
-export async function insertRow(db, table, data) {
+async function insertRow(db, table, data) {
   const columns = Object.keys(data).join(', ');
   const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(', ');
   const values = Object.values(data);
@@ -96,7 +95,7 @@ export async function insertRow(db, table, data) {
  * @param {Array} whereParams - WHERE parameters
  * @returns {Promise<Object>} Update result
  */
-export async function updateRow(db, table, data, whereClause, whereParams = []) {
+async function updateRow(db, table, data, whereClause, whereParams = []) {
   const setClause = Object.keys(data).map((key, i) => `${key} = $${i + 1}`).join(', ');
   const values = [...Object.values(data)];
   
@@ -119,7 +118,7 @@ export async function updateRow(db, table, data, whereClause, whereParams = []) 
  * @param {Array} whereParams - WHERE parameters
  * @returns {Promise<Object>} Delete result
  */
-export async function deleteRow(db, table, whereClause, whereParams = []) {
+async function deleteRow(db, table, whereClause, whereParams = []) {
   const query = `DELETE FROM ${table} WHERE ${whereClause} RETURNING *`;
   const result = await db.query(query, whereParams);
   return result.rows;
@@ -129,12 +128,12 @@ export async function deleteRow(db, table, whereClause, whereParams = []) {
  * Generate a unique ID
  * @returns {string} Unique ID
  */
-export function generateId() {
+function generateId() {
   return uuidv4();
 }
 
 // Export a db object for compatibility with existing code
-export const db = {
+const db = {
   query: async (text, params) => {
     const pool = await initializeDatabase();
     return pool.query(text, params);
@@ -145,4 +144,15 @@ export const db = {
       dbPool = null;
     }
   }
+};
+
+module.exports = {
+  db,
+  getDB,
+  getRow,
+  getRows,
+  insertRow,
+  updateRow,
+  deleteRow,
+  generateId
 };
