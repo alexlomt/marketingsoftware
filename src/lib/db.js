@@ -1,11 +1,16 @@
-export const runtime = 'nodejs';
-
 // Database configuration for Render deployment
 // This file provides PostgreSQL support for Render
 const pg = require('pg');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+
+// Add this line to indicate Node.js runtime for Next.js when imported in other files
+// But keep using CommonJS syntax for compatibility with scripts
+if (typeof global !== 'undefined' && global.process && global.process.env) {
+  // This will be used by Next.js but ignored by Node.js scripts
+  Object.defineProperty(exports, 'runtime', { value: 'nodejs' });
+}
 
 const { Pool } = pg;
 
