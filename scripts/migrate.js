@@ -5,7 +5,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { db } = require('../lib/db');
+const { db } = require('../src/lib/db');
 
 // Get migration files
 const migrationsDir = path.join(__dirname, '../models/migrations');
