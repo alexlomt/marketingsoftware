@@ -3,6 +3,13 @@ set -e
 
 echo "Starting build process for CRM application..."
 
+# Fix Babel conflict with Next.js fonts
+echo "Checking for Babel configuration conflicts..."
+if [ -f .babelrc ]; then
+  echo "Found .babelrc file, removing to use Next.js SWC compiler..."
+  rm -f .babelrc
+fi
+
 # Install dependencies with --no-shrinkwrap to ignore package-lock.json
 echo "Installing dependencies..."
 npm install --no-shrinkwrap
