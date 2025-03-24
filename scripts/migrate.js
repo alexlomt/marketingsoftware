@@ -9,12 +9,26 @@ const { db } = require('../src/lib/db');
 
 // Get migration files
 const migrationsDir = path.join(__dirname, '../models/migrations');
-const migrationFiles = fs.readdirSync(migrationsDir)
-  .filter(file => file.endsWith('.js'))
-  .sort(); // Sort to ensure migrations run in order
+
+// Create migrations directory if it doesn't exist
+if (!fs.existsSync(migrationsDir)) {
+  console.log('Creating migrations directory...');
+  fs.mkdirSync(migrationsDir, { recursive: true });
+}
+
+const migrationFiles = fs.existsSync(migrationsDir) 
+  ? fs.readdirSync(migrationsDir)
+      .filter(file => file.endsWith('.js'))
+      .sort()
+  : [];
 
 async function runMigrations() {
   console.log('Starting migrations...');
+  
+  if (migrationFiles.length === 0) {
+    console.log('No migration files found. Skipping migrations.');
+    return;
+  }
   
   try {
     // Create migrations table if it doesn't exist
