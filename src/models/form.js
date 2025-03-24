@@ -2,14 +2,14 @@
  * Form model for managing form data
  */
 
-import { db, generateId } from '../lib/db';
+const { db, generateId } = require('../lib/db');
 
 /**
  * Create a new form
  * @param {Object} formData - Form data
  * @returns {Promise<Object>} Created form
  */
-export async function createForm(formData) {
+async function createForm(formData) {
   const id = generateId();
   const timestamp = new Date().toISOString();
   
@@ -51,7 +51,7 @@ export async function createForm(formData) {
  * @param {string} id - Form ID
  * @returns {Promise<Object>} Form data
  */
-export async function getFormById(id) {
+async function getFormById(id) {
   const query = 'SELECT * FROM forms WHERE id = $1';
   const result = await db.query(query, [id]);
   
@@ -78,7 +78,7 @@ export async function getFormById(id) {
  * @param {Object} options - Query options
  * @returns {Promise<Array>} Forms
  */
-export async function getFormsByUserId(userId, options = {}) {
+async function getFormsByUserId(userId, options = {}) {
   const { limit = 100, offset = 0, status = 'active' } = options;
   
   const query = `
@@ -108,7 +108,7 @@ export async function getFormsByUserId(userId, options = {}) {
  * @param {Object} options - Query options
  * @returns {Promise<Array>} Forms
  */
-export async function getFormsByOrganization(organizationId, options = {}) {
+async function getFormsByOrganization(organizationId, options = {}) {
   const { limit = 100, offset = 0, status = 'active' } = options;
   
   const query = `
@@ -139,7 +139,7 @@ export async function getFormsByOrganization(organizationId, options = {}) {
  * @param {Object} formData - Updated form data
  * @returns {Promise<Object>} Updated form
  */
-export async function updateForm(id, formData) {
+async function updateForm(id, formData) {
   const timestamp = new Date().toISOString();
   
   // Prepare update data
@@ -195,7 +195,7 @@ export async function updateForm(id, formData) {
  * @param {string} id - Form ID
  * @returns {Promise<boolean>} Success status
  */
-export async function deleteForm(id) {
+async function deleteForm(id) {
   const query = 'DELETE FROM forms WHERE id = $1 RETURNING id';
   const result = await db.query(query, [id]);
   return result.rows.length > 0;
@@ -207,7 +207,7 @@ export async function deleteForm(id) {
  * @param {Object} submissionData - Form submission data
  * @returns {Promise<Object>} Submission result
  */
-export async function submitForm(formId, submissionData) {
+async function submitForm(formId, submissionData) {
   const id = generateId();
   const timestamp = new Date().toISOString();
   
@@ -243,7 +243,7 @@ export async function submitForm(formId, submissionData) {
  * @param {Object} options - Query options
  * @returns {Promise<Array>} Form submissions
  */
-export async function getFormSubmissions(formId, options = {}) {
+async function getFormSubmissions(formId, options = {}) {
   const { limit = 100, offset = 0 } = options;
   
   const query = `
@@ -271,7 +271,7 @@ export async function getFormSubmissions(formId, options = {}) {
  * @param {string} id - Submission ID
  * @returns {Promise<Object>} Submission data
  */
-export async function getFormSubmissionById(id) {
+async function getFormSubmissionById(id) {
   const query = 'SELECT * FROM form_submissions WHERE id = $1';
   const result = await db.query(query, [id]);
   
@@ -291,7 +291,7 @@ export async function getFormSubmissionById(id) {
   return submission;
 }
 
-export default {
+module.exports = {
   createForm,
   getFormById,
   getFormsByUserId,
