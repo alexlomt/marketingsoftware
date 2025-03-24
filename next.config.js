@@ -18,7 +18,19 @@ module.exports = {
   // Configure build output
   output: 'standalone',
   
-  // Configure headers for security
+  // Disable Edge Runtime for API routes
+  experimental: {
+    runtime: 'nodejs',
+  },
+  
+  // Configure Node.js packages that should not be bundled
+  serverComponentsExternalPackages: [
+    'pg',
+    'bcryptjs',
+    'jsonwebtoken'
+  ],
+  
+  // Configure headers for security and to skip Edge Runtime
   async headers() {
     return [
       {
@@ -47,6 +59,16 @@ module.exports = {
           },
         ],
       },
+      {
+        // Skip Edge Runtime for API routes
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'x-middleware-preflight',
+            value: 'skip'
+          }
+        ]
+      }
     ];
   },
   
@@ -59,6 +81,16 @@ module.exports = {
         chunks: 'all',
         maxInitialRequests: 25,
         minSize: 20000,
+      };
+    }
+    
+    // Add fallbacks for Node.js modules
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false
       };
     }
     
