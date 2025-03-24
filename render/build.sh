@@ -5,7 +5,7 @@ echo "Starting build process for CRM application..."
 
 # Install dependencies with explicit npm ci
 echo "Installing dependencies..."
-npm ci || npm install
+npm install --no-shrinkwrap
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
