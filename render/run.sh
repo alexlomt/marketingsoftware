@@ -7,6 +7,6 @@ echo "Starting CRM application..."
 export PORT=${PORT:-3000}
 export NODE_ENV=${NODE_ENV:-production}
 
-# Run the application
+# Run the application using the standalone server output
 echo "Running application on port $PORT..."
-npm start
+node .next/standalone/server.js
