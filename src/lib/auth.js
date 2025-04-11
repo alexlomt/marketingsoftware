@@ -1,18 +1,12 @@
-// Note: bcryptjs functions (hashPassword, comparePassword) still require the Node.js runtime.
-// API routes using them must run in Node.js.
+// Node.js-dependent authentication and user management functions
 
 import bcrypt from 'bcryptjs';
-// import jwt from 'jsonwebtoken'; // Removed
-import * as jose from 'jose'; // Added
 import { getEnv } from './env';
 import { db, getRow, insertRow, updateRow, generateId } from './db';
+import { generateToken as generateJwtToken } from './auth-edge'; // Import the Edge-compatible generator
 
 const env = getEnv();
 const SALT_ROUNDS = 10;
-
-// Prepare the JWT secret for jose (needs to be Uint8Array)
-const jwtSecret = new TextEncoder().encode(env.JWT_SECRET);
-const alg = 'HS256'; // Algorithm used for signing
 
 /**
  * Hash a password (Requires Node.js Runtime)
@@ -36,61 +30,12 @@ export async function comparePassword(password, hashedPassword) {
   return bcrypt.compare(password, hashedPassword);
 }
 
-/**
- * Generate a JWT token using jose (Edge Runtime Compatible)
- * @param {Object} payload - Token payload
- * @param {string} [expiresIn] - Token expiration time (e.g., '7d', '2h'). Defaults to env.JWT_EXPIRES_IN or '7d'.
- * @returns {Promise<string>} JWT token
- */
-export async function generateToken(payload, expiresIn) {
-  const expirationTime = expiresIn || env.JWT_EXPIRES_IN || '7d';
-  
-  return await new jose.SignJWT(payload)
-    .setProtectedHeader({ alg })
-    .setIssuedAt()
-    // .setIssuer('urn:example:issuer') // Optional: Add issuer
-    // .setAudience('urn:example:audience') // Optional: Add audience
-    .setExpirationTime(expirationTime)
-    .sign(jwtSecret);
-}
-
-/**
- * Verify a JWT token using jose (Edge Runtime Compatible)
- * @param {string} token - JWT token
- * @returns {Promise<Object|null>} Token payload or null if invalid/expired
- */
-export async function verifyToken(token) {
-  if (!token) {
-    return null;
-  }
-  try {
-    const { payload } = await jose.jwtVerify(token, jwtSecret, {
-      // algorithms: [alg], // Optional: Specify algorithms
-      // issuer: 'urn:example:issuer', // Optional: Validate issuer if set during generation
-      // audience: 'urn:example:audience', // Optional: Validate audience if set during generation
-    });
-    // jwtVerify throws if invalid/expired, so if we reach here, it's valid
-    return payload; 
-  } catch (error) {
-    // console.error('Token verification failed:', error.message);
-    if (error instanceof jose.errors.JWTExpired) {
-      console.log('Token expired');
-    } else if (error instanceof jose.errors.JOSEError) {
-      console.log('Token verification error:', error.code, error.message);
-    } else {
-      console.error('Unexpected error during token verification:', error);
-    }
-    return null;
-  }
-}
-
-
-// --- User management functions (Require Node.js Runtime due to bcrypt/db) --- 
+// --- User management functions (Require Node.js Runtime) --- 
 
 /**
  * Register a new user
  * @param {object} userData - User data (name, email, password)
- * @returns {Promise<Object>} User object
+ * @returns {Promise<Object>} User object (without token)
  */
 export async function registerUser(userData) {
   const { name, email, password } = userData;
@@ -157,8 +102,8 @@ export async function loginUser(email, password) {
     ...(user.organization_id && { organization_id: user.organization_id })
   };
   
-  // Generate token
-  const token = await generateToken(tokenPayload); // Now async
+  // Generate token using the Edge-compatible function
+  const token = await generateJwtToken(tokenPayload); // Use imported function
 
   // Return user details and token
   return {

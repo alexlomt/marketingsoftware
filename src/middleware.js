@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from './lib/auth';
+// Import verifyToken from the new Edge-specific file
+import { verifyToken } from './lib/auth-edge'; 
 
 // Removed explicit runtime export, relying on Edge-compatible verifyToken
 // export const runtime = 'nodejs'; 
@@ -47,10 +48,10 @@ export async function middleware(request) { // Made middleware async
     }
   }
 
-  // Verify token (now uses jose and is async)
+  // Verify token (using jose via auth-edge.js, is async)
   let payload = null; // Initialize payload
   try {
-    payload = await verifyToken(authToken); // Added await here
+    payload = await verifyToken(authToken); // Uses verifyToken from auth-edge.js
   } catch (error) {
     // verifyToken should ideally handle its own errors and return null,
     // but catch unexpected errors just in case.
