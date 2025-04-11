@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDB, getRow, updateRow } from '@/lib/db';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, comparePassword } from '@/lib/auth';
 
 /**
  * API route for changing user password

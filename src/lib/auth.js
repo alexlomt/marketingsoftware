@@ -1,4 +1,3 @@
-// Use Node.js runtime
 export const runtime = "nodejs";
 
 const bcrypt = require('bcryptjs');
