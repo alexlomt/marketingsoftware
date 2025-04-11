@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getTagById, updateTag, deleteTag } from '@/models/tag';
 import { getOrganizationId } from '@/lib/auth-utils';
