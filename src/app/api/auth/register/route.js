@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { createUser } from '@/models/user';
 import { createOrganization } from '@/models/organization';
