@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { createTag, getTagsByOrganization } from '@/models/tag';
 import { getOrganizationId } from '@/lib/auth-utils';
