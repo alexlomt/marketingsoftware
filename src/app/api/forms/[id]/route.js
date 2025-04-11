@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getFormById, updateForm, deleteForm } from '@/models/form';
 import { getOrganizationId } from '@/lib/auth-utils';
