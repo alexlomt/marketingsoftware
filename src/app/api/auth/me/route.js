@@ -1,62 +1,91 @@
+export const dynamic = 'force-dynamic'; // Mark as dynamic route
+
 import { NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
-import { getUserById } from '@/models/user';
+import { getDB, getRow, updateRow } from '@/lib/db';
+import { hashPassword, comparePassword } from '@/lib/auth'; // This import should now work with our ES Module conversion
 
 /**
- * API route for getting current user information
- * GET /api/auth/me
+ * API route for changing user password
+ * POST /api/auth/change-password
  */
-export async function GET(request) {
+export async function POST(request) {
   try {
-    // Get auth token from cookie
-    const authToken = request.cookies.get('auth_token')?.value;
+    // Get user ID from request headers (set by middleware)
+    const userId = request.headers.get('x-user-id');
     
-    if (!authToken) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
     
-    // Verify token
-    const payload = verifyToken(authToken);
+    // Parse request body
+    const body = await request.json();
+    const { currentPassword, newPassword } = body;
     
-    if (!payload) {
+    // Validate required fields
+    if (!currentPassword || !newPassword) {
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
+        { error: 'Current password and new password are required' },
+        { status: 400 }
       );
     }
     
-    // Get user from database
-    const user = await getUserById(payload.id);
+    // Validate password strength
+    if (newPassword.length < 8) {
+      return NextResponse.json(
+        { error: 'New password must be at least 8 characters long' },
+        { status: 400 }
+      );
+    }
     
-    // Return user data (excluding password)
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        organization_id: user.organization_id,
-        role: user.role,
-        created_at: user.created_at,
-        updated_at: user.updated_at
-      }
-    });
-  } catch (error) {
-    console.error('Get current user error:', error);
+    const db = await getDB();
     
-    // Handle user not found
-    if (error.message === 'User not found') {
+    // Get user with password hash
+    const user = await getRow(db, 'SELECT * FROM users WHERE id = ?', [userId]);
+    
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
     
+    // Verify current password
+    const isPasswordValid = await comparePassword(currentPassword, user.password_hash);
+    
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Current password is incorrect' },
+        { status: 400 }
+      );
+    }
+    
+    // Hash new password
+    const passwordHash = await hashPassword(newPassword);
+    
+    // Update user password
+    await updateRow(
+      db,
+      'users',
+      {
+        password_hash: passwordHash,
+        updated_at: new Date().toISOString()
+      },
+      'id = ?',
+      [userId]
+    );
+    
+    return NextResponse.json({
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    
     // Generic error response
     return NextResponse.json(
-      { error: 'Failed to get user information' },
+      { error: 'Failed to change password' },
       { status: 500 }
     );
   }
