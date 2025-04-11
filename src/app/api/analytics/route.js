@@ -1,4 +1,5 @@
-export const runtime = 'nodejs'; // Added runtime specifier
+export const runtime = 'nodejs'; 
+export const dynamic = 'force-dynamic'; // Mark as dynamic route
 
 import { NextResponse } from 'next/server';
 import { getContactsStats, getDealsStats, getEmailCampaignStats } from '@/models/analytics';
