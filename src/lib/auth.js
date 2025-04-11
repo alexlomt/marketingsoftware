@@ -1,56 +1,91 @@
-export const runtime = "nodejs";
+// Note: bcryptjs functions (hashPassword, comparePassword) still require the Node.js runtime.
+// API routes using them must run in Node.js.
 
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+// import jwt from 'jsonwebtoken'; // Removed
+import * as jose from 'jose'; // Added
 import { getEnv } from './env';
 import { db, getRow, insertRow, updateRow, generateId } from './db';
 
 const env = getEnv();
 const SALT_ROUNDS = 10;
 
+// Prepare the JWT secret for jose (needs to be Uint8Array)
+const jwtSecret = new TextEncoder().encode(env.JWT_SECRET);
+const alg = 'HS256'; // Algorithm used for signing
+
 /**
- * Hash a password
+ * Hash a password (Requires Node.js Runtime)
  * @param {string} password - Plain text password
  * @returns {Promise<string>} Hashed password
  */
 export async function hashPassword(password) {
+  if (!password) throw new Error('Password cannot be empty');
   const salt = await bcrypt.genSalt(SALT_ROUNDS);
   return bcrypt.hash(password, salt);
 }
 
 /**
- * Compare a password with a hash
+ * Compare a password with a hash (Requires Node.js Runtime)
  * @param {string} password - Plain text password
  * @param {string} hashedPassword - Hashed password
  * @returns {Promise<boolean>} Whether the password matches
  */
 export async function comparePassword(password, hashedPassword) {
+  if (!password || !hashedPassword) return false;
   return bcrypt.compare(password, hashedPassword);
 }
 
 /**
- * Generate a JWT token
+ * Generate a JWT token using jose (Edge Runtime Compatible)
  * @param {Object} payload - Token payload
- * @param {string} [expiresIn='7d'] - Token expiration time
- * @returns {string} JWT token
+ * @param {string} [expiresIn] - Token expiration time (e.g., '7d', '2h'). Defaults to env.JWT_EXPIRES_IN or '7d'.
+ * @returns {Promise<string>} JWT token
  */
-export function generateToken(payload, expiresIn = '7d') {
-  return jwt.sign(payload, env.JWT_SECRET, { expiresIn });
+export async function generateToken(payload, expiresIn) {
+  const expirationTime = expiresIn || env.JWT_EXPIRES_IN || '7d';
+  
+  return await new jose.SignJWT(payload)
+    .setProtectedHeader({ alg })
+    .setIssuedAt()
+    // .setIssuer('urn:example:issuer') // Optional: Add issuer
+    // .setAudience('urn:example:audience') // Optional: Add audience
+    .setExpirationTime(expirationTime)
+    .sign(jwtSecret);
 }
 
 /**
- * Verify a JWT token
+ * Verify a JWT token using jose (Edge Runtime Compatible)
  * @param {string} token - JWT token
- * @returns {Object|null} Token payload or null if invalid
+ * @returns {Promise<Object|null>} Token payload or null if invalid/expired
  */
-export function verifyToken(token) {
+export async function verifyToken(token) {
+  if (!token) {
+    return null;
+  }
   try {
-    return jwt.verify(token, env.JWT_SECRET);
+    const { payload } = await jose.jwtVerify(token, jwtSecret, {
+      // algorithms: [alg], // Optional: Specify algorithms
+      // issuer: 'urn:example:issuer', // Optional: Validate issuer if set during generation
+      // audience: 'urn:example:audience', // Optional: Validate audience if set during generation
+    });
+    // jwtVerify throws if invalid/expired, so if we reach here, it's valid
+    return payload; 
   } catch (error) {
-    console.error('Token verification failed:', error.message);
+    // console.error('Token verification failed:', error.message);
+    if (error instanceof jose.errors.JWTExpired) {
+      console.log('Token expired');
+    } else if (error instanceof jose.errors.JOSEError) {
+      console.log('Token verification error:', error.code, error.message);
+    } else {
+      console.error('Unexpected error during token verification:', error);
+    }
     return null;
   }
 }
+
+
+// --- User management functions (Require Node.js Runtime due to bcrypt/db) --- 
 
 /**
  * Register a new user
@@ -62,9 +97,9 @@ export async function registerUser(userData) {
   const pool = await db.getDB(); // Use pool directly
 
   // Check if user already exists
-  const existingUser = await getRow(pool, 'SELECT * FROM users WHERE email = $1', [email]);
+  const existingUser = await getRow(pool, 'SELECT id FROM users WHERE email = $1', [email]);
   if (existingUser) {
-    throw new Error('User already exists');
+    throw new Error('User already exists with this email.');
   }
 
   // Hash password
@@ -79,7 +114,7 @@ export async function registerUser(userData) {
     name,
     email,
     password_hash: passwordHash,
-    // created_at and updated_at should have defaults in the DB schema
+    role: 'user', // Default role
   });
 
   // Return user without password
@@ -87,6 +122,7 @@ export async function registerUser(userData) {
     id: newUser.id,
     name: newUser.name,
     email: newUser.email,
+    role: newUser.role,
   };
 }
 
@@ -94,32 +130,44 @@ export async function registerUser(userData) {
  * Login a user
  * @param {string} email - User email
  * @param {string} password - User password
- * @returns {Promise<Object>} User object and token
+ * @returns {Promise<{user: Object, token: string}>} User object and token
  */
 export async function loginUser(email, password) {
   const pool = await db.getDB();
 
   // Get user
-  const user = await getRow(pool, 'SELECT * FROM users WHERE email = $1', [email]);
+  const user = await getRow(pool, 'SELECT id, name, email, password_hash, role, organization_id FROM users WHERE email = $1', [email]);
   if (!user) {
-    throw new Error('Invalid credentials');
+    console.warn(`Login attempt failed: User not found for email: ${email}`);
+    throw new Error('Invalid email or password.');
   }
 
   // Check password
   const isPasswordValid = await comparePassword(password, user.password_hash);
   if (!isPasswordValid) {
-    throw new Error('Invalid credentials');
+    console.warn(`Login attempt failed: Invalid password for user: ${email}`);
+    throw new Error('Invalid email or password.');
   }
 
+  // Generate token payload
+  const tokenPayload = { 
+    id: user.id, 
+    role: user.role,
+    // Include organization_id if it exists
+    ...(user.organization_id && { organization_id: user.organization_id })
+  };
+  
   // Generate token
-  const token = generateToken({ id: user.id }, env.JWT_EXPIRES_IN || '7d');
+  const token = await generateToken(tokenPayload); // Now async
 
-  // Return user without password
+  // Return user details and token
   return {
     user: {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
+      organization_id: user.organization_id,
     },
     token,
   };
@@ -132,7 +180,7 @@ export async function loginUser(email, password) {
  */
 export async function getUserById(id) {
   const pool = await db.getDB();
-  const user = await getRow(pool, 'SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1', [id]);
+  const user = await getRow(pool, 'SELECT id, name, email, role, organization_id, created_at, updated_at FROM users WHERE id = $1', [id]);
   if (!user) {
     throw new Error('User not found');
   }
@@ -142,23 +190,25 @@ export async function getUserById(id) {
 /**
  * Update user
  * @param {string} id - User ID
- * @param {Object} userData - User data to update (name, email, password)
+ * @param {Object} userData - User data to update (name, email, password, role, organization_id)
  * @returns {Promise<Object>} Updated user object
  */
 export async function updateUser(id, userData) {
   const pool = await db.getDB();
-  const { name, email, password } = userData;
+  const { name, email, password, role, organization_id } = userData;
 
   // Check if user exists
-  const existingUser = await getRow(pool, 'SELECT * FROM users WHERE id = $1', [id]);
+  const existingUser = await getRow(pool, 'SELECT id FROM users WHERE id = $1', [id]);
   if (!existingUser) {
     throw new Error('User not found');
   }
 
   // Prepare update data
   const updateData = {};
-  if (name) updateData.name = name;
-  if (email) updateData.email = email;
+  if (name !== undefined) updateData.name = name;
+  if (email !== undefined) updateData.email = email;
+  if (role !== undefined) updateData.role = role;
+  if (organization_id !== undefined) updateData.organization_id = organization_id;
   updateData.updated_at = new Date(); // Ensure updated_at is set
 
   // Update password if provided
@@ -167,9 +217,10 @@ export async function updateUser(id, userData) {
   }
 
   // Update user
-  const updatedUsers = await updateRow(pool, 'users', updateData, 'id = $1', [id]);
+  const updatedUsers = await updateRow(pool, 'users', updateData, { id }); // Use object condition
 
   if (!updatedUsers || updatedUsers.length === 0) {
+      console.error(`User update failed for ID: ${id}`);
       throw new Error('User update failed');
   }
 
@@ -180,5 +231,7 @@ export async function updateUser(id, userData) {
     id: updatedUser.id,
     name: updatedUser.name,
     email: updatedUser.email,
+    role: updatedUser.role,
+    organization_id: updatedUser.organization_id,
   };
 }

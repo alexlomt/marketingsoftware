@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import { verifyToken } from './lib/auth'; // Temporarily commented out
+import { verifyToken } from './lib/auth';
 
-// Force the middleware to run in the Node.js runtime
-export const runtime = 'nodejs';
+// Removed explicit runtime export, relying on Edge-compatible verifyToken
+// export const runtime = 'nodejs'; 
 
 /**
- * Middleware to handle authentication and authorization (Temporarily Simplified for Debugging)
+ * Middleware to handle authentication and authorization
  */
-export function middleware(request) {
-  console.log('[DEBUG] Middleware invoked for:', request.nextUrl.pathname);
-
+export async function middleware(request) { // Made middleware async
   // Skip middleware for public routes
   const publicRoutes = [
     '/api/auth/register',
@@ -27,15 +25,9 @@ export function middleware(request) {
 
   // Allow access to public routes without authentication
   if (isPublicRoute) {
-    console.log('[DEBUG] Public route, allowing.');
     return NextResponse.next();
   }
 
-  // Temporarily bypass all token verification for debugging
-  console.log('[DEBUG] Bypassing token verification for path:', request.nextUrl.pathname);
-  return NextResponse.next(); 
-
-  /* // --- Original logic commented out for debugging ---
   // Get auth token from cookie
   const authToken = request.cookies.get('auth_token')?.value;
 
@@ -55,13 +47,15 @@ export function middleware(request) {
     }
   }
 
-  // Verify token
-  let payload;
+  // Verify token (now uses jose and is async)
+  let payload = null; // Initialize payload
   try {
-    payload = verifyToken(authToken);
+    payload = await verifyToken(authToken); // Added await here
   } catch (error) {
-    console.error('Token verification error:', error);
-    payload = null; // Ensure payload is null if verification fails
+    // verifyToken should ideally handle its own errors and return null,
+    // but catch unexpected errors just in case.
+    console.error('Unexpected error during token verification in middleware:', error);
+    payload = null; 
   }
 
   // If token is invalid or expired, handle differently for API vs page requests
@@ -104,10 +98,12 @@ export function middleware(request) {
 
   // Add user info to request headers for use in API routes and page components (via getServerSideProps/React Server Components)
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-user-id', payload.id);
-  requestHeaders.set('x-user-role', payload.role);
+  requestHeaders.set('x-user-id', String(payload.id)); // Ensure value is string
+  if (payload.role) {
+      requestHeaders.set('x-user-role', String(payload.role)); // Ensure value is string
+  }
   if (payload.organization_id) { // Only set if organization_id exists
-      requestHeaders.set('x-organization-id', payload.organization_id);
+      requestHeaders.set('x-organization-id', String(payload.organization_id)); // Ensure value is string
   }
 
   // Continue with the request, adding the modified headers
@@ -116,8 +112,6 @@ export function middleware(request) {
       headers: requestHeaders,
     },
   });
-  // --- End of original logic ---
-  */
 }
 
 // Configure middleware to run on specific paths
