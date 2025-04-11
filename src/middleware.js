@@ -9,6 +9,9 @@ import { verifyToken } from './lib/auth-edge';
  * Middleware to handle authentication and authorization
  */
 export async function middleware(request) { // Made middleware async
+  const pathname = request.nextUrl.pathname;
+  console.log(`[MW LOG] Middleware invoked for path: ${pathname}`);
+
   // Skip middleware for public routes
   const publicRoutes = [
     '/api/auth/register',
@@ -21,11 +24,12 @@ export async function middleware(request) { // Made middleware async
 
   // Check if the current path is a public route or a sub-path of a public route
   const isPublicRoute = publicRoutes.some(route => 
-    request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/')
+    pathname === route || pathname.startsWith(route + '/')
   );
 
   // Allow access to public routes without authentication
   if (isPublicRoute) {
+    console.log(`[MW LOG] Path ${pathname} is public. Allowing.`);
     return NextResponse.next();
   }
 
@@ -34,7 +38,9 @@ export async function middleware(request) { // Made middleware async
 
   // If no token is present, handle differently for API vs page requests
   if (!authToken) {
-    if (request.nextUrl.pathname.startsWith('/api/')) {
+    console.log(`[MW LOG] No auth token found for path: ${pathname}`);
+    if (pathname.startsWith('/api/')) {
+      console.log(`[MW LOG] Returning 401 for API path.`);
       // For API routes, return unauthorized error
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -42,8 +48,9 @@ export async function middleware(request) { // Made middleware async
       );
     } else {
       // For page routes, redirect to login
+      console.log(`[MW LOG] Redirecting to login for page path.`);
       const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('from', request.nextUrl.pathname);
+      loginUrl.searchParams.set('from', pathname);
       return NextResponse.redirect(loginUrl);
     }
   }
@@ -51,21 +58,25 @@ export async function middleware(request) { // Made middleware async
   // Verify token (using jose via auth-edge.js, is async)
   let payload = null; // Initialize payload
   try {
+    console.log(`[MW LOG] Verifying token for path: ${pathname}`);
     payload = await verifyToken(authToken); // Uses verifyToken from auth-edge.js
+    console.log(`[MW LOG] Token verification result for ${pathname}:`, payload ? `Valid (User ID: ${payload.id})` : 'Invalid/Expired');
   } catch (error) {
     // verifyToken should ideally handle its own errors and return null,
     // but catch unexpected errors just in case.
-    console.error('Unexpected error during token verification in middleware:', error);
+    console.error(`[MW ERROR] Unexpected error during token verification for ${pathname}:`, error);
     payload = null; 
   }
 
   // If token is invalid or expired, handle differently for API vs page requests
   if (!payload) {
-    const response = request.nextUrl.pathname.startsWith('/api/')
+    console.log(`[MW LOG] Invalid/Expired token for path: ${pathname}`);
+    const response = pathname.startsWith('/api/')
       ? NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
       : NextResponse.redirect(new URL('/login', request.url));
     
     // Clear the invalid cookie
+    console.log(`[MW LOG] Clearing auth_token cookie.`);
     response.cookies.set({
       name: 'auth_token',
       value: '',
@@ -78,26 +89,23 @@ export async function middleware(request) { // Made middleware async
     return response;
   }
 
-  // Check role-based access for admin-only routes
-  const adminApiRoutes = ['/api/admin/', '/api/setup/']; // Add setup route as admin
+  // --- Role Check (unchanged) ---
+  const adminApiRoutes = ['/api/admin/', '/api/setup/']; 
   const adminPageRoutes = ['/admin/'];
-
-  const isAdminApiRoute = adminApiRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
-  );
-  const isAdminPageRoute = adminPageRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
-  );
-
+  const isAdminApiRoute = adminApiRoutes.some(route => pathname.startsWith(route));
+  const isAdminPageRoute = adminPageRoutes.some(route => pathname.startsWith(route));
   if ((isAdminApiRoute || isAdminPageRoute) && payload.role !== 'admin') {
-    if (isAdminApiRoute) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    } else {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+      console.log(`[MW LOG] Access denied (Admin required) for path: ${pathname}`);
+      if (isAdminApiRoute) {
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      } else {
+          return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
   }
+  // --- End Role Check --- 
 
-  // Add user info to request headers for use in API routes and page components (via getServerSideProps/React Server Components)
+  // Add user info to request headers for use in API routes and page components
+  console.log(`[MW LOG] Adding user headers for path: ${pathname}`);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-user-id', String(payload.id)); // Ensure value is string
   if (payload.role) {
@@ -108,6 +116,7 @@ export async function middleware(request) { // Made middleware async
   }
 
   // Continue with the request, adding the modified headers
+  console.log(`[MW LOG] Forwarding request with added headers for path: ${pathname}`);
   return NextResponse.next({
     request: {
       headers: requestHeaders,

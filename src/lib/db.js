@@ -22,25 +22,50 @@ let dbPool = null;
  */
 async function initializeDatabase() {
   if (dbPool) {
+    // console.log('[DB LOG] Returning existing DB pool.'); // Optional: Log reuse
     return dbPool;
   }
 
-  // Create a connection pool
-  dbPool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-  });
+  const connectionString = process.env.DATABASE_URL;
+  console.log('[DB LOG] Initializing DB pool...');
+  if (!connectionString) {
+    console.error('[DB ERROR] DATABASE_URL environment variable is not set!');
+    throw new Error('DATABASE_URL environment variable is not set!');
+  }
+  // Mask password for logging
+  const maskedConnectionString = connectionString.replace(/:([^:]*)@/, ':********@'); 
+  console.log(`[DB LOG] Using connection string (masked): ${maskedConnectionString}`);
 
-  // Test the connection
+  // Create a connection pool
   try {
-    const client = await dbPool.connect();
-    console.log('Successfully connected to PostgreSQL database');
-    client.release();
-  } catch (error) {
-    console.error('Failed to connect to PostgreSQL database:', error);
-    throw error;
+      dbPool = new Pool({
+        connectionString: connectionString,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      });
+      console.log('[DB LOG] DB Pool created.');
+  } catch(error) {
+      console.error('[DB ERROR] Failed to CREATE Pool object:', error);
+      throw error;
   }
 
+  // Test the connection
+  let client;
+  try {
+    console.log('[DB LOG] Attempting to connect client...');
+    client = await dbPool.connect();
+    console.log('[DB LOG] Successfully connected client to PostgreSQL database');
+  } catch (error) {
+    console.error('[DB ERROR] Failed to CONNECT client to PostgreSQL database:', error);
+    dbPool = null; // Reset pool if connection fails
+    throw error;
+  } finally {
+     if (client) {
+         client.release();
+         console.log('[DB LOG] Client released.');
+     }
+  }
+
+  console.log('[DB LOG] DB Initialization complete.');
   return dbPool;
 }
 
@@ -49,8 +74,11 @@ async function initializeDatabase() {
  * @returns {Promise<pg.Pool>} PostgreSQL connection pool
  */
 async function getDB() {
+  // console.log('[DB LOG] getDB() called.'); // Optional: Log every call
   return initializeDatabase();
 }
+
+// --- Rest of the functions (getRow, getRows, etc.) remain the same ---
 
 /**
  * Execute a query and get a single row
@@ -109,7 +137,9 @@ async function updateRow(db, table, data, whereClause, whereParams = []) {
   // Adjust the parameter indices in the WHERE clause
   let adjustedWhereClause = whereClause;
   for (let i = 0; i < whereParams.length; i++) {
-    adjustedWhereClause = adjustedWhereClause.replace(`$${i + 1}`, `$${values.length + i + 1}`);
+    // Use a regex to replace placeholder $n ensuring it's not part of a larger number
+    const placeholderRegex = new RegExp(`\$${i + 1}(|$)`, 'g');
+    adjustedWhereClause = adjustedWhereClause.replace(placeholderRegex, `$${values.length + i + 1}$1`);
   }
   
   const query = `UPDATE ${table} SET ${setClause} WHERE ${adjustedWhereClause} RETURNING *`;
@@ -145,8 +175,10 @@ const db = {
     const pool = await initializeDatabase();
     return pool.query(text, params);
   },
+  getDB: initializeDatabase, // Expose initialize directly if needed
   end: async () => {
     if (dbPool) {
+      console.log('[DB LOG] Closing DB pool.');
       await dbPool.end();
       dbPool = null;
     }
