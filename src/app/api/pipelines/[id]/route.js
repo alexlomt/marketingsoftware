@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getPipelineById, updatePipeline, deletePipeline } from '@/models/pipeline';
 import { getOrganizationId } from '@/lib/auth-utils';
