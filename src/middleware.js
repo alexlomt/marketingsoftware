@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from './lib/auth';
+// import { verifyToken } from './lib/auth'; // Temporarily commented out
 
 // Force the middleware to run in the Node.js runtime
 export const runtime = 'nodejs';
 
 /**
- * Middleware to handle authentication and authorization
+ * Middleware to handle authentication and authorization (Temporarily Simplified for Debugging)
  */
 export function middleware(request) {
+  console.log('[DEBUG] Middleware invoked for:', request.nextUrl.pathname);
+
   // Skip middleware for public routes
   const publicRoutes = [
     '/api/auth/register',
@@ -25,9 +27,15 @@ export function middleware(request) {
 
   // Allow access to public routes without authentication
   if (isPublicRoute) {
+    console.log('[DEBUG] Public route, allowing.');
     return NextResponse.next();
   }
 
+  // Temporarily bypass all token verification for debugging
+  console.log('[DEBUG] Bypassing token verification for path:', request.nextUrl.pathname);
+  return NextResponse.next(); 
+
+  /* // --- Original logic commented out for debugging ---
   // Get auth token from cookie
   const authToken = request.cookies.get('auth_token')?.value;
 
@@ -108,6 +116,8 @@ export function middleware(request) {
       headers: requestHeaders,
     },
   });
+  // --- End of original logic ---
+  */
 }
 
 // Configure middleware to run on specific paths
