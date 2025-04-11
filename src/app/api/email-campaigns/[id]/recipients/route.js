@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getCampaignRecipients, getCampaignStatistics, updateRecipientStatus } from '@/models/emailCampaign';
 import { getOrganizationId } from '@/lib/auth-utils';
