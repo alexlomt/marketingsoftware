@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // This file ensures auth API routes use Node.js runtime instead of Edge Runtime
 export const runtime = 'nodejs';
 
