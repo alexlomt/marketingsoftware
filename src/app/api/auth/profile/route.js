@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getDB, getRow, updateRow } from '@/lib/db';
 import { comparePassword } from '@/lib/auth';
