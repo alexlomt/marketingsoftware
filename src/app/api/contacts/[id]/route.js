@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getContactById, updateContact, deleteContact } from '@/models/contact';
 import { getOrganizationId } from '@/lib/auth-utils';
