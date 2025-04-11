@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'; // Added runtime specifier
+
 import { NextResponse } from 'next/server';
 import { createDeal, getDealsByOrganization } from '@/models/deal';
 import { getOrganizationId } from '@/lib/auth-utils';

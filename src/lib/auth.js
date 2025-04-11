@@ -1,13 +1,13 @@
-// Authentication utilities
+// Use Node.js runtime
+export const runtime = "nodejs";
 
-import { hash, compare } from 'bcryptjs';
-import { sign, verify } from 'jsonwebtoken';
-import { getRow, insertRow, updateRow } from './db';
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { getEnv } = require('./env');
+const { db, getRow, insertRow, updateRow } = require('./db'); // Ensure db uses Node.js runtime internally
+const { generateId } = require('./db'); // Assuming generateId is needed here
 
-// Add this line to indicate Node.js runtime for Next.js
-export const runtime = 'nodejs';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const env = getEnv();
 const SALT_ROUNDS = 10;
 
 /**
@@ -15,8 +15,9 @@ const SALT_ROUNDS = 10;
  * @param {string} password - Plain text password
  * @returns {Promise<string>} Hashed password
  */
-export async function hashPassword(password) {
-  return hash(password, SALT_ROUNDS);
+async function hashPassword(password) {
+  const salt = await bcrypt.genSalt(SALT_ROUNDS);
+  return bcrypt.hash(password, salt);
 }
 
 /**
@@ -25,18 +26,18 @@ export async function hashPassword(password) {
  * @param {string} hashedPassword - Hashed password
  * @returns {Promise<boolean>} Whether the password matches
  */
-export async function comparePassword(password, hashedPassword) {
-  return compare(password, hashedPassword);
+async function comparePassword(password, hashedPassword) {
+  return bcrypt.compare(password, hashedPassword);
 }
 
 /**
  * Generate a JWT token
  * @param {Object} payload - Token payload
- * @param {string} expiresIn - Token expiration time
+ * @param {string} [expiresIn='7d'] - Token expiration time
  * @returns {string} JWT token
  */
-export function generateToken(payload, expiresIn = '7d') {
-  return sign(payload, JWT_SECRET, { expiresIn });
+function generateToken(payload, expiresIn = '7d') {
+  return jwt.sign(payload, env.JWT_SECRET, { expiresIn });
 }
 
 /**
@@ -44,74 +45,77 @@ export function generateToken(payload, expiresIn = '7d') {
  * @param {string} token - JWT token
  * @returns {Object|null} Token payload or null if invalid
  */
-export function verifyToken(token) {
+function verifyToken(token) {
   try {
-    return verify(token, JWT_SECRET);
+    return jwt.verify(token, env.JWT_SECRET);
   } catch (error) {
+    console.error('Token verification failed:', error.message);
     return null;
   }
 }
 
 /**
  * Register a new user
- * @param {D1Database} db - D1 database client
- * @param {Object} userData - User data
+ * @param {object} userData - User data (name, email, password)
  * @returns {Promise<Object>} User object
  */
-export async function registerUser(db, userData) {
+async function registerUser(userData) {
   const { name, email, password } = userData;
-  
+  const pool = await db.getDB(); // Use pool directly
+
   // Check if user already exists
-  const existingUser = await getRow(db, 'SELECT * FROM users WHERE email = ?', [email]);
+  const existingUser = await getRow(pool, 'SELECT * FROM users WHERE email = $1', [email]);
   if (existingUser) {
     throw new Error('User already exists');
   }
-  
+
   // Hash password
   const passwordHash = await hashPassword(password);
-  
+
   // Generate user ID
-  const id = crypto.randomUUID();
-  
+  const id = generateId();
+
   // Insert user
-  await insertRow(db, 'users', {
+  const newUser = await insertRow(pool, 'users', {
     id,
     name,
     email,
     password_hash: passwordHash,
+    // created_at and updated_at should have defaults in the DB schema
   });
-  
+
   // Return user without password
   return {
-    id,
-    name,
-    email,
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
   };
 }
 
 /**
  * Login a user
- * @param {D1Database} db - D1 database client
  * @param {string} email - User email
  * @param {string} password - User password
  * @returns {Promise<Object>} User object and token
  */
-export async function loginUser(db, email, password) {
+async function loginUser(email, password) {
+  const pool = await db.getDB();
+
   // Get user
-  const user = await getRow(db, 'SELECT * FROM users WHERE email = ?', [email]);
+  const user = await getRow(pool, 'SELECT * FROM users WHERE email = $1', [email]);
   if (!user) {
     throw new Error('Invalid credentials');
   }
-  
+
   // Check password
   const isPasswordValid = await comparePassword(password, user.password_hash);
   if (!isPasswordValid) {
     throw new Error('Invalid credentials');
   }
-  
+
   // Generate token
-  const token = generateToken({ id: user.id });
-  
+  const token = generateToken({ id: user.id }, env.JWT_EXPIRES_IN || '7d');
+
   // Return user without password
   return {
     user: {
@@ -125,54 +129,69 @@ export async function loginUser(db, email, password) {
 
 /**
  * Get user by ID
- * @param {D1Database} db - D1 database client
  * @param {string} id - User ID
  * @returns {Promise<Object>} User object
  */
-export async function getUserById(db, id) {
-  const user = await getRow(db, 'SELECT id, name, email, created_at, updated_at FROM users WHERE id = ?', [id]);
+async function getUserById(id) {
+  const pool = await db.getDB();
+  const user = await getRow(pool, 'SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1', [id]);
   if (!user) {
     throw new Error('User not found');
   }
-  
   return user;
 }
 
 /**
  * Update user
- * @param {D1Database} db - D1 database client
  * @param {string} id - User ID
- * @param {Object} userData - User data to update
+ * @param {Object} userData - User data to update (name, email, password)
  * @returns {Promise<Object>} Updated user object
  */
-export async function updateUser(db, id, userData) {
+async function updateUser(id, userData) {
+  const pool = await db.getDB();
   const { name, email, password } = userData;
-  
+
   // Check if user exists
-  const existingUser = await getRow(db, 'SELECT * FROM users WHERE id = ?', [id]);
+  const existingUser = await getRow(pool, 'SELECT * FROM users WHERE id = $1', [id]);
   if (!existingUser) {
     throw new Error('User not found');
   }
-  
+
   // Prepare update data
-  const updateData = {
-    name: name || existingUser.name,
-    email: email || existingUser.email,
-    updated_at: new Date().toISOString(),
-  };
-  
+  const updateData = {};
+  if (name) updateData.name = name;
+  if (email) updateData.email = email;
+  updateData.updated_at = new Date(); // Ensure updated_at is set
+
   // Update password if provided
   if (password) {
     updateData.password_hash = await hashPassword(password);
   }
-  
+
   // Update user
-  await updateRow(db, 'users', updateData, 'id = ?', [id]);
-  
+  const updatedUsers = await updateRow(pool, 'users', updateData, 'id = $1', [id]);
+
+  if (!updatedUsers || updatedUsers.length === 0) {
+      throw new Error('User update failed');
+  }
+
+  const updatedUser = updatedUsers[0];
+
   // Return updated user without password
   return {
-    id,
-    name: updateData.name,
-    email: updateData.email,
+    id: updatedUser.id,
+    name: updatedUser.name,
+    email: updatedUser.email,
   };
 }
+
+module.exports = {
+    hashPassword,
+    comparePassword,
+    generateToken,
+    verifyToken,
+    registerUser,
+    loginUser,
+    getUserById,
+    updateUser
+};

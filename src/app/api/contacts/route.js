@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'; // Added runtime specifier
+
 import { NextResponse } from 'next/server';
 import { createContact, getContactsByOrganization } from '@/models/contact';
 import { withAuth, getOrganizationId } from '@/lib/auth-utils';
