@@ -1,10 +1,9 @@
 export const runtime = "nodejs";
 
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { getEnv } = require('./env');
-const { db, getRow, insertRow, updateRow } = require('./db'); // Ensure db uses Node.js runtime internally
-const { generateId } = require('./db'); // Assuming generateId is needed here
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { getEnv } from './env';
+import { db, getRow, insertRow, updateRow, generateId } from './db';
 
 const env = getEnv();
 const SALT_ROUNDS = 10;
@@ -14,7 +13,7 @@ const SALT_ROUNDS = 10;
  * @param {string} password - Plain text password
  * @returns {Promise<string>} Hashed password
  */
-async function hashPassword(password) {
+export async function hashPassword(password) {
   const salt = await bcrypt.genSalt(SALT_ROUNDS);
   return bcrypt.hash(password, salt);
 }
@@ -25,7 +24,7 @@ async function hashPassword(password) {
  * @param {string} hashedPassword - Hashed password
  * @returns {Promise<boolean>} Whether the password matches
  */
-async function comparePassword(password, hashedPassword) {
+export async function comparePassword(password, hashedPassword) {
   return bcrypt.compare(password, hashedPassword);
 }
 
@@ -35,7 +34,7 @@ async function comparePassword(password, hashedPassword) {
  * @param {string} [expiresIn='7d'] - Token expiration time
  * @returns {string} JWT token
  */
-function generateToken(payload, expiresIn = '7d') {
+export function generateToken(payload, expiresIn = '7d') {
   return jwt.sign(payload, env.JWT_SECRET, { expiresIn });
 }
 
@@ -44,7 +43,7 @@ function generateToken(payload, expiresIn = '7d') {
  * @param {string} token - JWT token
  * @returns {Object|null} Token payload or null if invalid
  */
-function verifyToken(token) {
+export function verifyToken(token) {
   try {
     return jwt.verify(token, env.JWT_SECRET);
   } catch (error) {
@@ -58,7 +57,7 @@ function verifyToken(token) {
  * @param {object} userData - User data (name, email, password)
  * @returns {Promise<Object>} User object
  */
-async function registerUser(userData) {
+export async function registerUser(userData) {
   const { name, email, password } = userData;
   const pool = await db.getDB(); // Use pool directly
 
@@ -97,7 +96,7 @@ async function registerUser(userData) {
  * @param {string} password - User password
  * @returns {Promise<Object>} User object and token
  */
-async function loginUser(email, password) {
+export async function loginUser(email, password) {
   const pool = await db.getDB();
 
   // Get user
@@ -131,7 +130,7 @@ async function loginUser(email, password) {
  * @param {string} id - User ID
  * @returns {Promise<Object>} User object
  */
-async function getUserById(id) {
+export async function getUserById(id) {
   const pool = await db.getDB();
   const user = await getRow(pool, 'SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1', [id]);
   if (!user) {
@@ -146,7 +145,7 @@ async function getUserById(id) {
  * @param {Object} userData - User data to update (name, email, password)
  * @returns {Promise<Object>} Updated user object
  */
-async function updateUser(id, userData) {
+export async function updateUser(id, userData) {
   const pool = await db.getDB();
   const { name, email, password } = userData;
 
@@ -183,14 +182,3 @@ async function updateUser(id, userData) {
     email: updatedUser.email,
   };
 }
-
-module.exports = {
-    hashPassword,
-    comparePassword,
-    generateToken,
-    verifyToken,
-    registerUser,
-    loginUser,
-    getUserById,
-    updateUser
-};
