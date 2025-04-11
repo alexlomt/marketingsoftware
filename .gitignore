@@ -21,7 +21,6 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
-# Uncomment the next line if you want to commit '.env.example'
 # !.env.example
 
 # macOS specific files
@@ -43,7 +42,7 @@ ehthumbs_vista.db
 !.vscode/extensions.json
 *.sublime-workspace
 
-# Optional: Lockfiles (usually committed, but can be ignored in library projects)
+# Optional: Lockfiles (usually committed)
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
@@ -59,7 +58,8 @@ coverage/
 # Optional: Test runner files
 .nyc_output/
 
-# Render specific (If any - usually not needed)
-
 # Other temporary files
 *.tsbuildinfo
+
+# IDX specific
+.idx/
