@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getWorkflowById, updateWorkflow, deleteWorkflow } from '@/models/workflow';
 import { getOrganizationId } from '@/lib/auth-utils';
