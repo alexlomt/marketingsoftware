@@ -1,6 +1,8 @@
+export const dynamic = 'force-dynamic'; // Mark as dynamic route
+
 import { NextResponse } from 'next/server';
 import { getDB, getRow, updateRow } from '@/lib/db';
-import { hashPassword, comparePassword } from '@/lib/auth';
+import { hashPassword, comparePassword } from '@/lib/auth'; // This import should now work with our ES Module conversion
 
 /**
  * API route for changing user password
