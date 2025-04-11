@@ -70,14 +70,14 @@ const nextConfig = {
       };
     }
     
-    // Ignore all warnings related to Edge Runtime
+    // Ignore warnings for specific modules, but allow Edge Runtime warnings
     config.ignoreWarnings = [
       { module: /node_modules\/bcryptjs/ },
       { module: /node_modules\/jsonwebtoken/ },
       { module: /node_modules\/jws/ },
       { module: /node_modules\/pg/ },
       { module: /node_modules\/pgpass/ },
-      { message: /Edge Runtime/ },
+      // { message: /Edge Runtime/ }, // Temporarily removed to see warnings
     ];
     
     return config;
