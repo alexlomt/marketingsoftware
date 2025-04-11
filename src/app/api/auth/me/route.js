@@ -1,8 +1,10 @@
 export const dynamic = 'force-dynamic'; // Add this to mark as dynamic route
 
 import { NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
-import { getUserById } from '@/models/user';
+// Import verifyToken from the Edge-compatible file
+import { verifyToken } from '@/lib/auth-edge'; 
+// Import getUserById from the model, which relies on Node.js DB access
+import { getUserById } from '@/models/user'; 
 
 /**
  * API route for getting current user information
@@ -20,8 +22,8 @@ export async function GET(request) {
       );
     }
     
-    // Verify token
-    const payload = verifyToken(authToken);
+    // Verify token (now async)
+    const payload = await verifyToken(authToken); // Added await
     
     if (!payload) {
       return NextResponse.json(

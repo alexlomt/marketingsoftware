@@ -3,7 +3,10 @@
  * Represents a user in the CRM system
  */
 import { getDB, getRow, getRows, insertRow, updateRow, deleteRow, generateId } from '../lib/db';
-import { hashPassword, comparePassword, generateToken } from '../lib/auth';
+// Import Node.js dependent functions from auth.js
+import { hashPassword, comparePassword } from '../lib/auth'; 
+// Import Edge-compatible generateToken from auth-edge.js
+import { generateToken } from '../lib/auth-edge'; 
 
 /**
  * Create a new user
@@ -70,8 +73,8 @@ export async function authenticateUser(email, password) {
     throw new Error('Invalid credentials');
   }
   
-  // Generate token
-  const token = generateToken({ 
+  // Generate token (now async)
+  const token = await generateToken({ // Added await
     id: user.id,
     organization_id: user.organization_id,
     role: user.role
