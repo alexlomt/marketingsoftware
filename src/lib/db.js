@@ -1,4 +1,4 @@
-"""// Database configuration for Render deployment
+// Database configuration for Render deployment
 // This file provides PostgreSQL support for Render
 const pg = require('pg');
 const { v4: uuidv4 } = require('uuid');
@@ -31,11 +31,11 @@ async function initializeDatabase() {
   if (!connectionString) {
     console.error('[DB ERROR] FATAL: DATABASE_URL environment variable is not set!');
     // Force exit if critical env var is missing
-    process.exit(1); 
+    process.exit(1);
     // throw new Error('DATABASE_URL environment variable is not set!'); // Original throw
   }
   // Mask password for logging
-  const maskedConnectionString = connectionString.replace(/:([^:]*)@/, ':********@'); 
+  const maskedConnectionString = connectionString.replace(/:([^:]*)@/, ':********@');
   console.log(`[DB LOG] Using connection string (masked): ${maskedConnectionString}`);
 
   // Create a connection pool
@@ -82,7 +82,7 @@ async function initializeDatabase() {
 async function getDB() {
   // console.log('[DB LOG] getDB() called.'); // Optional: Log every call
   // InitializeDatabase already handles logging and potential exit
-  return initializeDatabase(); 
+  return initializeDatabase();
 }
 
 // --- Enhanced Logging for Query Execution ---
@@ -113,7 +113,7 @@ async function executeQuery(operationName, query, params = []) {
         console.error(`[DB EXEC ERROR] Params: ${JSON.stringify(params)}`); // Log params on error
         console.error(`[DB EXEC ERROR] Error:`, error); // Log the full error
         // Re-throw the error so the calling function knows it failed
-        throw error; 
+        throw error;
     }
 }
 
@@ -156,7 +156,7 @@ async function insertRow(db, table, data) {
   const columns = Object.keys(data).join(', ');
   const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(', ');
   const values = Object.values(data);
-  
+
   const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *`;
   const result = await executeQuery('insertRow', query, values);
   return result.rows[0];
@@ -167,34 +167,33 @@ async function insertRow(db, table, data) {
  * @param {pg.Pool} db - PostgreSQL connection pool (ignored)
  * @param {string} table - Table name
  * @param {Object} data - Update data
- * @param {string} whereClause - WHERE clause (use $n for parameters)
- * @param {Array} whereParams - WHERE parameters
- * @returns {Promise<Object>} Update result
+ * @param {string|Object} whereClause - WHERE clause (use $n for parameters) or object for simple key-value match
+ * @param {Array} whereParams - WHERE parameters (used only if whereClause is a string)
+ * @returns {Promise<Object[]>} Update result (array of updated rows)
  */
 async function updateRow(db, table, data, whereClause, whereParams = []) {
  // db parameter is ignored, using centralized executeQuery
   const setClause = Object.keys(data).map((key, i) => `${key} = $${i + 1}`).join(', ');
   const values = [...Object.values(data)];
-  
+
   // Adjust the parameter indices in the WHERE clause
-  let adjustedWhereClause = whereClause;
-   // Check if whereClause is an object (simple id match)
+  let adjustedWhereClause;
+   // Check if whereClause is an object (simple key-value match)
   if (typeof whereClause === 'object' && whereClause !== null && !Array.isArray(whereClause)) {
       const whereKeys = Object.keys(whereClause);
-      if (whereKeys.length === 1) {
-          const key = whereKeys[0];
-          adjustedWhereClause = `${key} = $${values.length + 1}`;
-          whereParams = [whereClause[key]]; // Use the value from the object
-      } else {
-          // Handle multiple keys if needed, or throw error for unsupported format
-          throw new Error('Unsupported object format for whereClause in updateRow');
+      // Build clause like 'key1 = $N AND key2 = $N+1 ...'
+      adjustedWhereClause = whereKeys.map((key, index) => `${key} = $${values.length + index + 1}`).join(' AND ');
+      whereParams = Object.values(whereClause); // Use the values from the object
+
+  } else if (typeof whereClause === 'string'){
+      // Original logic for string whereClause
+      adjustedWhereClause = whereClause;
+      for (let i = 0; i < whereParams.length; i++) {
+          const placeholderRegex = new RegExp(`\$${i + 1}(?!\d)`, 'g'); // Match $N not followed by a digit
+          adjustedWhereClause = adjustedWhereClause.replace(placeholderRegex, `$${values.length + i + 1}`);
       }
   } else {
-      // Original logic for string whereClause
-      for (let i = 0; i < whereParams.length; i++) {
-          const placeholderRegex = new RegExp(`\$${i + 1}( |$)`, 'g');
-          adjustedWhereClause = adjustedWhereClause.replace(placeholderRegex, `$${values.length + i + 1}$1`);
-      }
+      throw new Error('Invalid whereClause type in updateRow');
   }
 
   const query = `UPDATE ${table} SET ${setClause} WHERE ${adjustedWhereClause} RETURNING *`;
@@ -259,4 +258,3 @@ module.exports = {
   deleteRow,
   generateId
 };
-""
