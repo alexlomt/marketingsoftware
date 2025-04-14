@@ -12,6 +12,7 @@ export default function RegisterFormFields() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [organizationName, setOrganizationName] = useState(''); // New state
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,12 +29,13 @@ export default function RegisterFormFields() {
     }
 
     try {
-      const response = await fetch('/api/auth/register', { // Ensure this API route exists
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        // Added organization_name
+        body: JSON.stringify({ name, email, password, organization_name: organizationName }), 
       });
 
       if (response.ok) {
@@ -100,6 +102,19 @@ export default function RegisterFormFields() {
             disabled={isLoading}
             className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
           />
+          {/* ADD THIS FIELD */}
+           <FormField
+             label="Organization Name"
+             type="text"
+             id="organizationName"
+             name="organizationName"
+             value={organizationName}
+             onChange={(e) => setOrganizationName(e.target.value)}
+             required
+             placeholder="Your Organization's Name"
+             disabled={isLoading}
+             className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+           />
 
           {error && (
             <p className="text-center text-sm text-red-500" role="alert">
