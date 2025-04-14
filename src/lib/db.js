@@ -5,6 +5,42 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 
+// --- Global Error Handlers ---
+// Added at the top to ensure they are registered early
+if (typeof process !== 'undefined') { // Ensure this runs only in Node.js environment
+    process.on('uncaughtException', (error, origin) => {
+        console.error('
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+        console.error('!!!!!!!!!! UNCAUGHT EXCEPTION !!!!!!!!!!');
+        console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+        console.error('Origin:', origin);
+        console.error('Error:', error);
+        console.error('
+Application will exit due to uncaught exception.
+');
+        // Optionally: Graceful shutdown logic here
+        process.exit(1); // Exit the process forcefully
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('
+*****************************************');
+        console.error('********* UNHANDLED REJECTION *********');
+        console.error('*****************************************');
+        console.error('Reason:', reason);
+        // console.error('Promise:', promise); // Logging the promise might be too verbose
+        console.error('
+Application may be unstable due to unhandled promise rejection.
+');
+        // Note: Exiting on unhandledRejection is debated, but can prevent unknown states.
+        // If the app becomes unstable, uncomment the line below:
+        // process.exit(1);
+    });
+    console.log('[PROCESS LOG] Global error handlers (uncaughtException, unhandledRejection) registered.');
+}
+// --- End Global Error Handlers ---
+
+
 // Add this line to indicate Node.js runtime for Next.js when imported in other files
 // But keep using CommonJS syntax for compatibility with scripts
 if (typeof global !== 'undefined' && global.process && global.process.env) {
