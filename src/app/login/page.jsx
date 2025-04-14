@@ -1,24 +1,33 @@
+// src/app/login/page.jsx
 import React, { Suspense } from 'react';
-import LoginFormFields from '@/components/LoginFormFields'; // We'll create this component below
+import LoginFormFields from '@/components/LoginFormFields';
 
-// Fallback UI while Suspense boundary is resolving
+// Improved Fallback UI
 function LoginFormLoading() {
   return (
-     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
-       <div className="w-full max-w-md rounded-lg bg-gray-800 p-8 shadow-lg">
-         <h1 className="mb-6 text-center text-3xl font-bold text-white">
-           Login
-         </h1>
-         <p className="text-center text-gray-300">Loading...</p>
+     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-4">
+       <div className="w-full max-w-md rounded-xl bg-gray-800/80 p-8 shadow-2xl backdrop-blur-sm animate-pulse">
+         {/* Simulate Logo space */}
+         {/* <div className="mb-6 flex justify-center h-12 bg-gray-700 rounded"></div> */}
+
+         <div className="mb-6 h-8 bg-gray-700 rounded w-3/4 mx-auto"></div> {/* Title placeholder */}
+         <div className="mb-8 h-4 bg-gray-700 rounded w-1/2 mx-auto"></div> {/* Subtitle placeholder */}
+
+         {/* Form field placeholders */}
+         <div className="space-y-6">
+           <div className="h-16 bg-gray-700 rounded"></div> {/* Email field */}
+           <div className="h-16 bg-gray-700 rounded"></div> {/* Password field */}
+           <div className="h-10 bg-gray-700 rounded"></div> {/* Button placeholder */}
+         </div>
+
+         <div className="mt-6 h-4 bg-gray-700 rounded w-1/3 mx-auto"></div> {/* Sign up link placeholder */}
        </div>
      </div>
   );
 }
 
-// This remains the main page component, potentially a Server Component
 export default function LoginPage() {
   return (
-    // Wrap the part that needs searchParams in Suspense
     <Suspense fallback={<LoginFormLoading />}>
       <LoginFormFields />
     </Suspense>
