@@ -9,9 +9,8 @@ npm ci
 
 # Run migrations
 echo "Running database migrations..."
-# Allow migration script to fail without stopping build (e.g., if db not ready)
-# Consider making this more robust or running migrations separately/manually on first deploy
-node scripts/migrate.js || echo "Warning: Migrations skipped or failed, continuing build..."
+# Ensure migrations must succeed for the build to continue
+node scripts/migrate.js
 
 # Build the application
 echo "Building the application..."
