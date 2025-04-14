@@ -1,102 +1,26 @@
-'use client';
+import React, { Suspense } from 'react';
+import LoginFormFields from '@/components/LoginFormFields'; // We'll create this component below
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import FormField from '@/components/FormField'; // Assuming path based on repo structure
-import Button from '@/components/Button'; // Assuming path based on repo structure
-import Link from 'next/link';
-
-export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        // Login successful, API route sets the cookie
-        // Redirect user: check for 'from' param or go to dashboard
-        const fromPath = searchParams.get('from') || '/dashboard';
-        console.log(`Login successful, redirecting to: ${fromPath}`);
-        // Use replace to avoid login page being in history
-        router.replace(fromPath);
-      } else {
-        // Handle login errors (e.g., invalid credentials)
-        const data = await response.json();
-        setError(data.error || 'Login failed. Please check your credentials.');
-        console.error('Login failed:', data.error);
-      }
-    } catch (err) {
-      console.error('Login request error:', err);
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+// Fallback UI while Suspense boundary is resolving
+function LoginFormLoading() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
-      <div className="w-full max-w-md rounded-lg bg-gray-800 p-8 shadow-lg">
-        <h1 className="mb-6 text-center text-3xl font-bold text-white">
-          Login
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <FormField
-            label="Email"
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@example.com"
-            disabled={isLoading}
-          />
-          <FormField
-            label="Password"
-            type="password"
-            id="password"
-            name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="••••••••"
-            disabled={isLoading}
-          />
+     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+       <div className="w-full max-w-md rounded-lg bg-gray-800 p-8 shadow-lg">
+         <h1 className="mb-6 text-center text-3xl font-bold text-white">
+           Login
+         </h1>
+         <p className="text-center text-gray-300">Loading...</p>
+       </div>
+     </div>
+  );
+}
 
-          {error && (
-            <p className="text-center text-sm text-red-500" role="alert">
-              {error}
-            </p>
-          )}
-
-          <Button type="submit" fullWidth disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Login'}
-          </Button>
-
-          {/* Optional: Add links for password reset or registration if needed */}
-           <div className="mt-4 text-center text-sm text-gray-400">
-             {/* Example: <Link href="/forgot-password" className="hover:text-blue-400">Forgot password?</Link> */}
-             {/* Example: <span className="mx-2">|</span> */}
-             {/* Example: <Link href="/register" className="hover:text-blue-400">Sign up</Link> */}
-           </div>
-        </form>
-      </div>
-    </div>
+// This remains the main page component, potentially a Server Component
+export default function LoginPage() {
+  return (
+    // Wrap the part that needs searchParams in Suspense
+    <Suspense fallback={<LoginFormLoading />}>
+      <LoginFormFields />
+    </Suspense>
   );
 }
