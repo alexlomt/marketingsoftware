@@ -1,12 +1,13 @@
+// src/models/user.js
 /**
  * User model
  * Represents a user in the CRM system
  */
 import { getDB, getRow, getRows, insertRow, updateRow, deleteRow, generateId } from '../lib/db';
 // Import Node.js dependent functions from auth.js
-import { hashPassword, comparePassword } from '../lib/auth'; 
+import { hashPassword, comparePassword } from '../lib/auth';
 // Import Edge-compatible generateToken from auth-edge.js
-import { generateToken } from '../lib/auth-edge'; 
+import { generateToken } from '../lib/auth-edge';
 
 /**
  * Create a new user
@@ -17,19 +18,20 @@ import { generateToken } from '../lib/auth-edge';
 export async function createUser(data, organizationId) {
   const db = await getDB();
   const { name, email, password, role } = data;
-  
+
   // Check if user already exists
-  const existingUser = await getRow(db, 'SELECT * FROM users WHERE email = ?', [email]);
+  // Use $1 for placeholder
+  const existingUser = await getRow(db, 'SELECT * FROM users WHERE email = $1', [email]);
   if (existingUser) {
     throw new Error('User with this email already exists');
   }
-  
+
   // Hash password
   const passwordHash = await hashPassword(password);
-  
+
   // Generate user ID
   const id = generateId();
-  
+
   // Insert user
   await insertRow(db, 'users', {
     id,
@@ -41,14 +43,15 @@ export async function createUser(data, organizationId) {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   });
-  
+
   // Return user without password
+  // Use $1 for placeholder
   const user = await getRow(
-    db, 
-    'SELECT id, organization_id, name, email, role, created_at, updated_at FROM users WHERE id = ?', 
+    db,
+    'SELECT id, organization_id, name, email, role, created_at, updated_at FROM users WHERE id = $1',
     [id]
   );
-  
+
   return user;
 }
 
@@ -60,26 +63,27 @@ export async function createUser(data, organizationId) {
  */
 export async function authenticateUser(email, password) {
   const db = await getDB();
-  
+
   // Get user
-  const user = await getRow(db, 'SELECT * FROM users WHERE email = ?', [email]);
+  // Use $1 for placeholder
+  const user = await getRow(db, 'SELECT * FROM users WHERE email = $1', [email]);
   if (!user) {
     throw new Error('Invalid credentials');
   }
-  
+
   // Check password
   const isPasswordValid = await comparePassword(password, user.password_hash);
   if (!isPasswordValid) {
     throw new Error('Invalid credentials');
   }
-  
+
   // Generate token (now async)
   const token = await generateToken({ // Added await
     id: user.id,
     organization_id: user.organization_id,
     role: user.role
   });
-  
+
   // Return user without password
   return {
     user: {
@@ -102,17 +106,18 @@ export async function authenticateUser(email, password) {
  */
 export async function getUserById(id) {
   const db = await getDB();
-  
+
+  // Use $1 for placeholder
   const user = await getRow(
-    db, 
-    'SELECT id, organization_id, name, email, role, created_at, updated_at FROM users WHERE id = ?', 
+    db,
+    'SELECT id, organization_id, name, email, role, created_at, updated_at FROM users WHERE id = $1',
     [id]
   );
-  
+
   if (!user) {
     throw new Error('User not found');
   }
-  
+
   return user;
 }
 
@@ -125,10 +130,11 @@ export async function getUserById(id) {
 export async function getUsersByOrganization(organizationId, options = {}) {
   const db = await getDB();
   const { limit = 50, offset = 0 } = options;
-  
+
+  // Use $1, $2, $3 for placeholders
   return getRows(
-    db, 
-    'SELECT id, organization_id, name, email, role, created_at, updated_at FROM users WHERE organization_id = ? ORDER BY name LIMIT ? OFFSET ?', 
+    db,
+    'SELECT id, organization_id, name, email, role, created_at, updated_at FROM users WHERE organization_id = $1 ORDER BY name LIMIT $2 OFFSET $3',
     [organizationId, limit, offset]
   );
 }
@@ -141,13 +147,14 @@ export async function getUsersByOrganization(organizationId, options = {}) {
  */
 export async function updateUser(id, data) {
   const db = await getDB();
-  
+
   // Check if user exists
-  const user = await getRow(db, 'SELECT * FROM users WHERE id = ?', [id]);
+  // Use $1 for placeholder
+  const user = await getRow(db, 'SELECT * FROM users WHERE id = $1', [id]);
   if (!user) {
     throw new Error('User not found');
   }
-  
+
   // Prepare update data
   const updateData = {
     name: data.name !== undefined ? data.name : user.name,
@@ -155,15 +162,16 @@ export async function updateUser(id, data) {
     role: data.role !== undefined ? data.role : user.role,
     updated_at: new Date().toISOString()
   };
-  
+
   // Update password if provided
   if (data.password) {
     updateData.password_hash = await hashPassword(data.password);
   }
-  
+
   // Update user
-  await updateRow(db, 'users', updateData, 'id = ?', [id]);
-  
+  // Use $1 for placeholder in whereClause
+  await updateRow(db, 'users', updateData, 'id = $1', [id]);
+
   // Return updated user without password
   return getUserById(id);
 }
@@ -175,10 +183,11 @@ export async function updateUser(id, data) {
  */
 export async function deleteUser(id) {
   const db = await getDB();
-  
-  // Check if user exists
+
+  // Check if user exists (getUserById already uses correct placeholder now)
   await getUserById(id);
-  
+
   // Delete user
-  await deleteRow(db, 'users', 'id = ?', [id]);
+  // Use $1 for placeholder
+  await deleteRow(db, 'users', 'id = $1', [id]);
 }
