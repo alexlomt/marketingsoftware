@@ -1,3 +1,4 @@
+// src/models/organization.js
 /**
  * Organization model
  * Represents a company or organization in the CRM system
@@ -12,10 +13,10 @@ import { getDB, getRow, getRows, insertRow, updateRow, deleteRow, generateId } f
 export async function createOrganization(data) {
   const db = await getDB();
   const { name, industry, website, phone, address } = data;
-  
+
   // Generate organization ID
   const id = generateId();
-  
+
   // Insert organization
   await insertRow(db, 'organizations', {
     id,
@@ -27,8 +28,8 @@ export async function createOrganization(data) {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   });
-  
-  // Return created organization
+
+  // Return created organization (already uses correct placeholders internally via getRow)
   return getOrganizationById(id);
 }
 
@@ -39,12 +40,13 @@ export async function createOrganization(data) {
  */
 export async function getOrganizationById(id) {
   const db = await getDB();
-  const organization = await getRow(db, 'SELECT * FROM organizations WHERE id = ?', [id]);
-  
+  // Use $1 for placeholder
+  const organization = await getRow(db, 'SELECT * FROM organizations WHERE id = $1', [id]);
+
   if (!organization) {
     throw new Error('Organization not found');
   }
-  
+
   return organization;
 }
 
@@ -56,8 +58,9 @@ export async function getOrganizationById(id) {
 export async function getAllOrganizations(options = {}) {
   const db = await getDB();
   const { limit = 50, offset = 0 } = options;
-  
-  return getRows(db, 'SELECT * FROM organizations ORDER BY name LIMIT ? OFFSET ?', [limit, offset]);
+
+  // Use $1, $2 for placeholders
+  return getRows(db, 'SELECT * FROM organizations ORDER BY name LIMIT $1 OFFSET $2', [limit, offset]);
 }
 
 /**
@@ -68,10 +71,10 @@ export async function getAllOrganizations(options = {}) {
  */
 export async function updateOrganization(id, data) {
   const db = await getDB();
-  
-  // Check if organization exists
+
+  // Check if organization exists (getOrganizationById now uses correct placeholder)
   const organization = await getOrganizationById(id);
-  
+
   // Prepare update data
   const updateData = {
     name: data.name !== undefined ? data.name : organization.name,
@@ -81,11 +84,12 @@ export async function updateOrganization(id, data) {
     address: data.address !== undefined ? data.address : organization.address,
     updated_at: new Date().toISOString()
   };
-  
+
   // Update organization
-  await updateRow(db, 'organizations', updateData, 'id = ?', [id]);
-  
-  // Return updated organization
+  // Use $1 for placeholder in whereClause
+  await updateRow(db, 'organizations', updateData, 'id = $1', [id]);
+
+  // Return updated organization (getOrganizationById now uses correct placeholder)
   return getOrganizationById(id);
 }
 
@@ -96,10 +100,11 @@ export async function updateOrganization(id, data) {
  */
 export async function deleteOrganization(id) {
   const db = await getDB();
-  
-  // Check if organization exists
+
+  // Check if organization exists (getOrganizationById now uses correct placeholder)
   await getOrganizationById(id);
-  
+
   // Delete organization
-  await deleteRow(db, 'organizations', 'id = ?', [id]);
+  // Use $1 for placeholder
+  await deleteRow(db, 'organizations', 'id = $1', [id]);
 }
