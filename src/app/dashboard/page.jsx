@@ -1,12 +1,29 @@
 'use client';
 
 import React from 'react';
-import Card from '@/components/Card';
-import Button from '@/components/Button';
-import Table from '@/components/Table';
+import Link from 'next/link';
+import { format } from 'date-fns'; // For date formatting
+import { 
+    Card, 
+    CardContent, 
+    CardDescription, 
+    CardFooter, 
+    CardHeader, 
+    CardTitle 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { 
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { ArrowUpRight, ArrowDownRight, Users, DollarSign, BarChartHorizontal, Mail } from 'lucide-react';
 
 const DashboardPage = () => {
-  // Sample data for demonstration
+  // Sample data
   const recentDeals = [
     { id: '1', title: 'Enterprise Software License', value: '$15,000', stage: 'Negotiation', contact: 'Acme Corp' },
     { id: '2', title: 'Consulting Services', value: '$8,500', stage: 'Proposal', contact: 'TechStart Inc' },
@@ -19,172 +36,130 @@ const DashboardPage = () => {
     { id: '3', title: 'Strategy Meeting', date: '2025-03-25T11:00:00', contact: 'Michael Brown' },
   ];
   
-  // Column definitions for tables
-  const dealColumns = [
-    { header: 'Deal', accessor: 'title' },
-    { header: 'Value', accessor: 'value' },
-    { header: 'Stage', accessor: 'stage' },
-    { header: 'Contact', accessor: 'contact' },
-    { 
-      header: 'Actions', 
-      cell: (row) => (
-        <Button variant="outline" size="sm">View</Button>
-      )
-    },
-  ];
-  
-  const appointmentColumns = [
-    { header: 'Title', accessor: 'title' },
-    { 
-      header: 'Date & Time', 
-      cell: (row) => {
-        const date = new Date(row.date);
-        return date.toLocaleString();
-      }
-    },
-    { header: 'Contact', accessor: 'contact' },
-    { 
-      header: 'Actions', 
-      cell: (row) => (
-        <Button variant="outline" size="sm">View</Button>
-      )
-    },
-  ];
-  
   // Stats for the dashboard
   const stats = [
-    { 
-      title: 'Total Contacts', 
-      value: '1,248', 
-      change: '+8.2%',
-      changeType: 'positive',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      )
-    },
-    { 
-      title: 'Open Deals', 
-      value: '42', 
-      change: '+12.5%',
-      changeType: 'positive',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
-    },
-    { 
-      title: 'Revenue', 
-      value: '$128,500', 
-      change: '+18.3%',
-      changeType: 'positive',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      )
-    },
-    { 
-      title: 'Email Open Rate', 
-      value: '24.8%', 
-      change: '-2.5%',
-      changeType: 'negative',
-      icon: (
-        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      )
-    },
+    { title: 'Total Contacts', value: '1,248', change: '+8.2%', icon: Users },
+    { title: 'Open Deals', value: '42', change: '+12.5%', icon: DollarSign },
+    { title: 'Revenue (MTD)', value: '$128,500', change: '+18.3%', icon: BarChartHorizontal },
+    { title: 'Email Open Rate', value: '24.8%', change: '-2.5%', icon: Mail },
   ];
   
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <div className="mt-4 sm:mt-0">
-          <Button>
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            New Deal
-          </Button>
+    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        {/* Header Area */}
+        <div className="flex items-center">
+            <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+            <div className="ml-auto flex items-center gap-2">
+                <Button size="sm">
+                    {/* Optional Icon: <PlusCircle className="h-4 w-4 mr-1" /> */}
+                    New Deal
+                </Button>
+            </div>
         </div>
-      </div>
-      
-      {/* Stats Section */}
-      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index} className="px-4 py-5 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 truncate">{stat.title}</p>
-                <div className="flex items-baseline">
-                  <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-                  {stat.change && (
-                    <p className={`ml-2 flex items-center text-sm ${
-                      stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {stat.changeType === 'positive' ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      )}
-                      <span className="ml-1">{stat.change}</span>
+
+      {/* Stats Section using shadcn Card */}
+      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          const isPositive = stat.change && stat.change.startsWith('+');
+          return (
+            <Card key={index}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                {stat.change && (
+                   <p className={`text-xs ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} text-muted-foreground flex items-center`}>
+                      {isPositive ? <ArrowUpRight className="h-4 w-4 mr-1"/> : <ArrowDownRight className="h-4 w-4 mr-1"/>}
+                      {stat.change} from last month
                     </p>
-                  )}
-                </div>
-              </div>
-              {stat.icon && (
-                <div className="p-3 bg-indigo-50 rounded-md">
-                  {stat.icon}
-                </div>
-              )}
-            </div>
-          </Card>
-        ))}
+                 )} 
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
       
-      {/* Recent Deals Section */}
-      <div className="mt-8">
-        <Card 
-          title="Recent Deals" 
-          footer={
-            <div className="text-center">
-              <Button variant="secondary">View All Deals</Button>
-            </div>
-          }
-        >
-          <Table 
-            columns={dealColumns} 
-            data={recentDeals} 
-            onRowClick={(row) => console.log('Clicked row:', row)}
-          />
-        </Card>
-      </div>
-      
-      {/* Upcoming Appointments Section */}
-      <div className="mt-8">
-        <Card 
-          title="Upcoming Appointments" 
-          footer={
-            <div className="text-center">
-              <Button variant="secondary">View All Appointments</Button>
-            </div>
-          }
-        >
-          <Table 
-            columns={appointmentColumns} 
-            data={upcomingAppointments} 
-            onRowClick={(row) => console.log('Clicked appointment:', row)}
-          />
-        </Card>
-      </div>
+       {/* Table Sections using Shadcn Table */}
+       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-2">
+         {/* Recent Deals Table */}
+         <Card className="xl:col-span-1">
+           <CardHeader className="flex flex-row items-center">
+             <div className="grid gap-2">
+               <CardTitle>Recent Deals</CardTitle>
+               {/* <CardDescription> Optional Description </CardDescription> */}
+             </div>
+             <Button asChild size="sm" className="ml-auto gap-1">
+               <Link href="/deals">View All</Link>
+             </Button>
+           </CardHeader>
+           <CardContent>
+             <Table>
+               <TableHeader>
+                 <TableRow>
+                   <TableHead>Deal</TableHead>
+                   <TableHead>Stage</TableHead>
+                   <TableHead className="text-right">Value</TableHead>
+                   {/* <TableHead>Contact</TableHead> Optional */}
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {recentDeals.slice(0, 5).map((deal) => ( // Limit rows shown
+                   <TableRow key={deal.id}>
+                     <TableCell>
+                       <div className="font-medium">{deal.title}</div>
+                       <div className="text-sm text-muted-foreground md:inline">
+                         {deal.contact} 
+                       </div>
+                     </TableCell>
+                     <TableCell>{deal.stage}</TableCell>
+                     <TableCell className="text-right">{deal.value}</TableCell>
+                   </TableRow>
+                 ))}
+               </TableBody>
+             </Table>
+           </CardContent>
+         </Card>
+
+        {/* Upcoming Appointments Table */}
+         <Card className="xl:col-span-1">
+           <CardHeader className="flex flex-row items-center">
+             <div className="grid gap-2">
+               <CardTitle>Upcoming Appointments</CardTitle>
+               {/* <CardDescription> Optional Description </CardDescription> */}
+             </div>
+             <Button asChild size="sm" className="ml-auto gap-1">
+               <Link href="/appointments">View All</Link>
+             </Button>
+           </CardHeader>
+           <CardContent>
+              <Table>
+               <TableHeader>
+                 <TableRow>
+                   <TableHead>Contact</TableHead>
+                   <TableHead>Title</TableHead>
+                   <TableHead className="text-right">Date & Time</TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {upcomingAppointments.slice(0, 5).map((appt) => ( // Limit rows shown
+                   <TableRow key={appt.id}>
+                      <TableCell>
+                       <div className="font-medium">{appt.contact}</div>
+                     </TableCell>
+                     <TableCell>{appt.title}</TableCell>
+                     <TableCell className="text-right">
+                       {format(new Date(appt.date), 'PPpp')} {/* Format date */}
+                     </TableCell>
+                   </TableRow>
+                 ))}
+               </TableBody>
+             </Table>
+           </CardContent>
+         </Card>
+       </div>
     </div>
   );
 };

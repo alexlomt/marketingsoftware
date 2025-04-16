@@ -1,230 +1,256 @@
 'use client';
 
-import React from 'react';
-import PageHeader from '@/components/PageHeader';
-import Button from '@/components/Button';
-import Table from '@/components/Table';
-import Card from '@/components/Card';
-import FormField from '@/components/FormField';
+import React, { useState, useEffect } from 'react'; // Added useState, useEffect
+import Link from 'next/link';
+import { format } from 'date-fns';
+import {
+    MoreVertical,
+    File,
+    PlusCircle,
+    ListFilter,
+    Eye, // For View Submissions
+    Share2, // For Share/Embed
+    Edit, // For Edit
+    Trash2, // For Delete
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
+// Placeholder for Add/Edit Form basic details
+const FormDetailsForm = ({ form, onSave, onCancel }) => {
+    return (
+        <div className="grid gap-4 py-4">
+            <p>Form details placeholder for {form ? form.id : 'new form'}.</p>
+             <div className="grid grid-cols-4 items-center gap-4">
+                 <Label htmlFor="title" className="text-right">Title</Label>
+                 <Input id="title" defaultValue={form?.title} className="col-span-3" />
+             </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                 <Label htmlFor="description" className="text-right">Description</Label>
+                 <Input id="description" defaultValue={form?.description} className="col-span-3" />
+             </div>
+             {/* Add fields for status etc. */}
+        </div>
+    )
+}
+
 
 const FormsPage = () => {
-  // Sample data for demonstration
-  const forms = [
-    { 
-      id: '1', 
-      title: 'Contact Request Form', 
-      description: 'General contact form for website visitors',
-      fields: 8,
-      submissions: 124,
-      is_published: true,
-      created_at: '2025-02-10T14:30:00'
-    },
-    { 
-      id: '2', 
-      title: 'Event Registration', 
-      description: 'Registration form for upcoming webinar',
-      fields: 12,
-      submissions: 87,
-      is_published: true,
-      created_at: '2025-02-25T09:15:00'
-    },
-    { 
-      id: '3', 
-      title: 'Customer Feedback', 
-      description: 'Survey form for product feedback',
-      fields: 15,
-      submissions: 0,
-      is_published: false,
-      created_at: '2025-03-15T11:45:00'
-    },
-  ];
-  
-  // Column definitions for forms table
-  const formColumns = [
-    { header: 'Form Title', accessor: 'title' },
-    { header: 'Description', accessor: 'description' },
-    { header: 'Fields', accessor: 'fields' },
-    { header: 'Submissions', accessor: 'submissions' },
-    { 
-      header: 'Status', 
-      cell: (row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          row.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-        }`}>
-          {row.is_published ? 'Published' : 'Draft'}
-        </span>
-      )
-    },
-    { 
-      header: 'Created', 
-      cell: (row) => {
-        const date = new Date(row.created_at);
-        return date.toLocaleDateString();
-      }
-    },
-    { 
-      header: 'Actions', 
-      cell: (row) => (
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm">View</Button>
-          <Button variant="outline" size="sm">Edit</Button>
-          {row.is_published && (
-            <Button variant="outline" size="sm">Share</Button>
-          )}
-        </div>
-      )
-    },
-  ];
-  
-  return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <PageHeader
-        title="Forms"
-        description="Create and manage your forms and surveys"
-        actions={
-          <Button>
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create Form
-          </Button>
-        }
-      />
-      
-      {/* Forms Table */}
-      <Card className="mt-6">
-        <Table 
-          columns={formColumns} 
-          data={forms} 
-          onRowClick={(row) => console.log('Clicked form:', row)}
-        />
-      </Card>
-      
-      {/* Form Builder Preview */}
-      <div className="mt-8">
-        <Card title="Form Builder">
-          <div className="mt-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-900">Contact Request Form</h3>
-                <p className="text-sm text-gray-500">Please fill out the form below to get in touch with us.</p>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <FormField
-                    label="First Name"
-                    name="first_name"
-                    placeholder="Enter your first name"
-                    required
-                  />
-                  <FormField
-                    label="Last Name"
-                    name="last_name"
-                    placeholder="Enter your last name"
-                    required
-                  />
+    // TODO: Replace with actual API data fetching
+    const [forms, setForms] = useState([
+        { id: '1', title: 'Contact Request Form', description: 'General contact form', fields: 8, submissions: 124, is_published: true, created_at: '2025-02-10T14:30:00' },
+        { id: '2', title: 'Event Registration', description: 'Webinar sign-up', fields: 12, submissions: 87, is_published: true, created_at: '2025-02-25T09:15:00' },
+        { id: '3', title: 'Customer Feedback', description: 'Product feedback survey', fields: 15, submissions: 0, is_published: false, created_at: '2025-03-15T11:45:00' },
+    ]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [selectedForm, setSelectedForm] = useState(null);
+    const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
+
+    // Redirect to form builder (placeholder)
+    const goToFormBuilder = (formId = null) => {
+        const path = formId ? `/forms/builder/${formId}` : '/forms/builder/new';
+        console.log(`Redirecting to form builder: ${path}`);
+        // router.push(path); // Use next/navigation router
+    }
+
+    const handleEditDetails = (form) => {
+        setSelectedForm(form);
+        setIsAddEditDialogOpen(true);
+    }
+    
+    const handleSaveFormDetails = (formData) => {
+        console.log("Saving form details:", formData, selectedForm?.id);
+        setIsAddEditDialogOpen(false);
+    }
+
+    const handleDelete = (formId) => {
+        console.log("Deleting form:", formId);
+    }
+
+     const viewSubmissions = (formId) => {
+        console.log("Viewing submissions for form:", formId);
+         // router.push(`/forms/${formId}/submissions`);
+    }
+
+     const shareForm = (formId) => {
+        console.log("Sharing form:", formId);
+        // Implement sharing/embed code logic (maybe another dialog)
+    }
+
+
+    return (
+        <Dialog open={isAddEditDialogOpen} onOpenChange={setIsAddEditDialogOpen}>
+            <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+                <div className="flex items-center">
+                    <h1 className="text-lg font-semibold md:text-2xl">Forms</h1>
+                    <div className="ml-auto flex items-center gap-2">
+                         {/* Add Filters if needed */}
+                         <Button size="sm" className="h-7 gap-1" onClick={() => goToFormBuilder()}> 
+                            <PlusCircle className="h-3.5 w-3.5" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                Create Form
+                            </span>
+                        </Button>
+                    </div>
                 </div>
                 
-                <FormField
-                  label="Email Address"
-                  name="email"
-                  type="email"
-                  placeholder="Enter your email address"
-                  required
-                />
-                
-                <FormField
-                  label="Phone Number"
-                  name="phone"
-                  placeholder="Enter your phone number"
-                />
-                
-                <FormField
-                  label="How did you hear about us?"
-                  name="source"
-                  type="select"
-                  placeholder="Please select"
-                  options={[
-                    { value: 'search', label: 'Search Engine' },
-                    { value: 'social', label: 'Social Media' },
-                    { value: 'referral', label: 'Referral' },
-                    { value: 'other', label: 'Other' },
-                  ]}
-                />
-                
-                <FormField
-                  label="Message"
-                  name="message"
-                  type="textarea"
-                  placeholder="Enter your message"
-                  required
-                />
-                
-                <FormField
-                  label="Subscribe to newsletter"
-                  name="subscribe"
-                  type="checkbox"
-                />
-                
-                <div className="pt-4">
-                  <Button>Submit</Button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-6 flex justify-between">
-            <div>
-              <Button variant="outline">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Edit Form
-              </Button>
-            </div>
-            <div className="flex space-x-3">
-              <Button variant="secondary">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Duplicate
-              </Button>
-              <Button variant="outline">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                Get Embed Code
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-      
-      {/* Form Submissions */}
-      <div className="mt-8">
-        <Card title="Recent Submissions" description="Contact Request Form">
-          <div className="mt-4">
-            <Table 
-              columns={[
-                { header: 'Date', cell: () => new Date().toLocaleDateString() },
-                { header: 'Name', cell: () => 'John Doe' },
-                { header: 'Email', cell: () => 'john.doe@example.com' },
-                { header: 'Phone', cell: () => '(555) 123-4567' },
-                { 
-                  header: 'Actions', 
-                  cell: () => (
-                    <Button variant="outline" size="sm">View</Button>
-                  )
-                },
-              ]} 
-              data={Array(3).fill({})}
-            />
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Your Forms</CardTitle>
+                        <CardDescription>
+                            Create, manage, and view submissions for your forms.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Submissions</TableHead>
+                                    <TableHead className="hidden md:table-cell">Fields</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Created</TableHead>
+                                    <TableHead>
+                                        <span className="sr-only">Actions</span>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                               {isLoading && (
+                                   <TableRow><TableCell colSpan={6} className="text-center">Loading...</TableCell></TableRow>
+                               )}
+                               {error && (
+                                    <TableRow><TableCell colSpan={6} className="text-center text-red-600">Error: {error}</TableCell></TableRow>
+                               )}
+                                {!isLoading && !error && forms.map((form) => (
+                                    <TableRow key={form.id}>
+                                        <TableCell className="font-medium">
+                                            {form.title}
+                                            <div className="text-xs text-muted-foreground hidden md:block">{form.description}</div>
+                                            </TableCell>
+                                        <TableCell>
+                                             <Badge variant={form.is_published ? "default" : "outline"}>
+                                                {form.is_published ? 'Published' : 'Draft'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell">{form.submissions}</TableCell>
+                                        <TableCell className="hidden md:table-cell">{form.fields}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">
+                                            {format(new Date(form.created_at), 'PP')}
+                                        </TableCell>
+                                        <TableCell>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                        <span className="sr-only">Toggle menu</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                     <DropdownMenuItem onClick={() => viewSubmissions(form.id)}>
+                                                        <Eye className="mr-2 h-4 w-4"/> View Submissions
+                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => goToFormBuilder(form.id)}>
+                                                         <Edit className="mr-2 h-4 w-4"/> Edit in Builder
+                                                    </DropdownMenuItem>
+                                                    {form.is_published && (
+                                                        <DropdownMenuItem onClick={() => shareForm(form.id)}>
+                                                            <Share2 className="mr-2 h-4 w-4"/> Share / Embed
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                     <DialogTrigger asChild>
+                                                         <DropdownMenuItem onClick={() => handleEditDetails(form)}>
+                                                            Edit Details
+                                                         </DropdownMenuItem>
+                                                     </DialogTrigger>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem 
+                                                        className="text-red-600 focus:text-red-600" 
+                                                        onClick={() => handleDelete(form.id)}
+                                                     >
+                                                         <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {!isLoading && !error && forms.length === 0 && (
+                                    <TableRow><TableCell colSpan={6} className="text-center">No forms found.</TableCell></TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                    <CardFooter>
+                        <div className="text-xs text-muted-foreground">
+                            Showing <strong>1-{forms.length}</strong> of <strong>{forms.length}</strong> forms
+                        </div>
+                         {/* Optional Pagination */}
+                    </CardFooter>
+                </Card>
+            </main>
+
+             {/* Add/Edit Form Details Dialog Content */}
+             <DialogContent className="sm:max-w-[425px]">
+                 <DialogHeader>
+                     <DialogTitle>{selectedForm ? 'Edit Form Details' : 'Create New Form'}</DialogTitle>
+                     <DialogDescription>
+                         {selectedForm ? 'Update the basic details for this form.' : 'Enter the basic details. You can add fields in the builder.'}
+                     </DialogDescription>
+                 </DialogHeader>
+                  <FormDetailsForm 
+                    form={selectedForm} 
+                    onSave={handleSaveFormDetails} 
+                    onCancel={() => setIsAddEditDialogOpen(false)} 
+                  />
+                 <DialogFooter>
+                    <DialogClose asChild>
+                         <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button type="button" onClick={handleSaveFormDetails}>Save Details</Button> 
+                 </DialogFooter>
+             </DialogContent>
+         </Dialog>
+    );
 };
 
 export default FormsPage;

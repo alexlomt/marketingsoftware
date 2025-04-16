@@ -1,252 +1,353 @@
 'use client';
 
-import React from 'react';
-import PageHeader from '@/components/PageHeader';
-import Button from '@/components/Button';
-import Table from '@/components/Table';
-import Card from '@/components/Card';
-import FormField from '@/components/FormField';
+import React, { useState, useEffect } from 'react'; // Added useState, useEffect
+import Link from 'next/link';
+import { format } from 'date-fns'; // For date formatting
+import {
+    MoreVertical,
+    File,
+    PlusCircle,
+    ListFilter,
+    Calendar as CalendarIcon, // Alias for icon
+    AreaChart, // Example for analytics
+    MailCheck, // Example for analytics
+    XCircle, // Example for analytics
+    Users, // Example for analytics
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"; // Added for filters
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"; // Added for date range
+import { Calendar } from "@/components/ui/calendar"; // Added for date range
+import { Progress } from "@/components/ui/progress"; // Added for analytics cards
+import { cn } from "@/lib/utils"; // Added for date picker styling
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
+// Placeholder for Add/Edit Campaign Form/Editor component
+const CampaignForm = ({ campaign, onSave, onCancel }) => {
+    return (
+        <div className="grid gap-4 py-4">
+            <p>Campaign form/editor placeholder for {campaign ? campaign.id : 'new campaign'}.</p>
+            {/* Full editor integration needed here */}
+        </div>
+    )
+}
+
 
 const EmailCampaignsPage = () => {
-  // Sample data for demonstration
-  const campaigns = [
-    { 
-      id: '1', 
-      name: 'March Newsletter', 
-      subject: 'Your March Update is Here!',
-      status: 'Sent',
-      recipients: 1248,
-      open_rate: '24.8%',
-      click_rate: '12.3%',
-      sent_date: '2025-03-15T10:00:00'
-    },
-    { 
-      id: '2', 
-      name: 'Product Launch Announcement', 
-      subject: 'Introducing Our New Product Line',
-      status: 'Scheduled',
-      recipients: 1500,
-      open_rate: '-',
-      click_rate: '-',
-      sent_date: '2025-04-01T09:00:00'
-    },
-    { 
-      id: '3', 
-      name: 'Customer Feedback Survey', 
-      subject: 'We Value Your Opinion',
-      status: 'Draft',
-      recipients: 0,
-      open_rate: '-',
-      click_rate: '-',
-      sent_date: null
-    },
-  ];
-  
-  // Column definitions for campaigns table
-  const campaignColumns = [
-    { header: 'Campaign Name', accessor: 'name' },
-    { header: 'Subject', accessor: 'subject' },
-    { 
-      header: 'Status', 
-      cell: (row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          row.status === 'Sent' ? 'bg-green-100 text-green-800' : 
-          row.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' : 
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {row.status}
-        </span>
-      )
-    },
-    { header: 'Recipients', accessor: 'recipients' },
-    { header: 'Open Rate', accessor: 'open_rate' },
-    { header: 'Click Rate', accessor: 'click_rate' },
-    { 
-      header: 'Sent Date', 
-      cell: (row) => {
-        if (!row.sent_date) return '-';
-        const date = new Date(row.sent_date);
-        return date.toLocaleString();
-      }
-    },
-    { 
-      header: 'Actions', 
-      cell: (row) => (
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm">View</Button>
-          <Button variant="outline" size="sm">Edit</Button>
-        </div>
-      )
-    },
-  ];
-  
-  return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <PageHeader
-        title="Email Campaigns"
-        description="Create and manage your email marketing campaigns"
-        actions={
-          <Button>
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create Campaign
-          </Button>
-        }
-      />
-      
-      {/* Filters */}
-      <Card className="mt-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          <FormField
-            label="Search"
-            name="search"
-            placeholder="Search campaigns..."
-          />
-          <FormField
-            label="Status"
-            name="status"
-            type="select"
-            placeholder="Select status"
-            options={[
-              { value: 'sent', label: 'Sent' },
-              { value: 'scheduled', label: 'Scheduled' },
-              { value: 'draft', label: 'Draft' },
-            ]}
-          />
-          <FormField
-            label="Date Range"
-            name="date_range"
-            type="select"
-            placeholder="Select range"
-            options={[
-              { value: 'last_7_days', label: 'Last 7 days' },
-              { value: 'last_30_days', label: 'Last 30 days' },
-              { value: 'last_90_days', label: 'Last 90 days' },
-              { value: 'custom', label: 'Custom range' },
-            ]}
-          />
-          <div className="flex items-end">
-            <Button variant="secondary" className="w-full">
-              Apply Filters
-            </Button>
-          </div>
-        </div>
-      </Card>
-      
-      {/* Campaigns Table */}
-      <Card className="mt-6">
-        <Table 
-          columns={campaignColumns} 
-          data={campaigns} 
-          onRowClick={(row) => console.log('Clicked campaign:', row)}
-        />
-      </Card>
-      
-      {/* Campaign Analytics */}
-      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Card title="Email Performance">
-          <div className="mt-4 space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Delivery Rate</span>
-                <span className="text-sm font-medium text-gray-900">98.7%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div className="bg-green-600 h-2.5 rounded-full" style={{ width: '98.7%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Open Rate</span>
-                <span className="text-sm font-medium text-gray-900">24.8%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: '24.8%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Click Rate</span>
-                <span className="text-sm font-medium text-gray-900">12.3%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '12.3%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Unsubscribe Rate</span>
-                <span className="text-sm font-medium text-gray-900">0.8%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div className="bg-red-600 h-2.5 rounded-full" style={{ width: '0.8%' }}></div>
-              </div>
-            </div>
-          </div>
-        </Card>
-        
-        <Card title="Top Performing Campaigns">
-          <div className="mt-4 space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Product Launch Announcement</span>
-                <span className="text-sm font-medium text-gray-900">32.5% open</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '32.5%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Holiday Special Offer</span>
-                <span className="text-sm font-medium text-gray-900">28.9% open</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '28.9%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Customer Feedback Survey</span>
-                <span className="text-sm font-medium text-gray-900">26.2% open</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '26.2%' }}></div>
-              </div>
-            </div>
-          </div>
-        </Card>
-        
-        <Card title="Email Activity">
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Emails Sent (Last 30 days)</span>
-              <span className="text-sm font-medium text-gray-900">5,248</span>
-            </div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Emails Opened</span>
-              <span className="text-sm font-medium text-gray-900">1,302</span>
-            </div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Links Clicked</span>
-              <span className="text-sm font-medium text-gray-900">645</span>
-            </div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Unsubscribes</span>
-              <span className="text-sm font-medium text-gray-900">42</span>
-            </div>
-            <div className="pt-4 mt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Active Subscribers</span>
-                <span className="text-sm font-medium text-gray-900">12,486</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
+    // TODO: Replace with actual API data fetching
+    const [campaigns, setCampaigns] = useState([
+        { id: '1', name: 'March Newsletter', subject: 'Your March Update is Here!', status: 'Sent', recipients: 1248, open_rate: '24.8%', click_rate: '12.3%', sent_date: '2025-03-15T10:00:00' },
+        { id: '2', name: 'Product Launch', subject: 'Introducing Our New Product!', status: 'Scheduled', recipients: 1500, open_rate: '-', click_rate: '-', sent_date: '2025-04-01T09:00:00' },
+        { id: '3', name: 'Feedback Survey', subject: 'We Value Your Opinion', status: 'Draft', recipients: 0, open_rate: '-', click_rate: '-', sent_date: null },
+    ]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [selectedCampaign, setSelectedCampaign] = useState(null);
+    const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
+    const [dateRange, setDateRange] = React.useState(); // For Date Picker
+
+    const handleEdit = (campaign) => {
+        setSelectedCampaign(campaign);
+        setIsAddEditDialogOpen(true);
+    }
+
+    const handleAdd = () => {
+        setSelectedCampaign(null);
+        setIsAddEditDialogOpen(true);
+    }
+    
+    const handleSaveCampaign = (formData) => {
+        console.log("Saving campaign:", formData, selectedCampaign?.id);
+        setIsAddEditDialogOpen(false);
+    }
+
+    const handleDelete = (campaignId) => {
+        console.log("Deleting campaign:", campaignId);
+    }
+
+
+    return (
+         <Dialog open={isAddEditDialogOpen} onOpenChange={setIsAddEditDialogOpen}>
+            <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+                <div className="flex items-center">
+                    <h1 className="text-lg font-semibold md:text-2xl">Email Campaigns</h1>
+                    <div className="ml-auto flex items-center gap-2">
+                         {/* Filters */}
+                         <Input placeholder="Search campaigns..." className="h-7 hidden sm:block w-48" />
+                         <Select>
+                            <SelectTrigger className="h-7 w-[140px]">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Statuses</SelectItem>
+                                <SelectItem value="sent">Sent</SelectItem>
+                                <SelectItem value="scheduled">Scheduled</SelectItem>
+                                <SelectItem value="draft">Draft</SelectItem>
+                            </SelectContent>
+                        </Select>
+                         {/* Date Range Picker */}
+                         <Popover>
+                             <PopoverTrigger asChild>
+                                 <Button
+                                     id="date"
+                                     variant={"outline"}
+                                     size="sm"
+                                     className={cn(
+                                         "h-7 w-[200px] justify-start text-left font-normal",
+                                         !dateRange && "text-muted-foreground"
+                                     )}
+                                 >
+                                     <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                                     {dateRange?.from ? (
+                                         dateRange.to ? (
+                                             <>
+                                                 {format(dateRange.from, "LLL dd, y")} -{" "}
+                                                 {format(dateRange.to, "LLL dd, y")}
+                                             </>
+                                         ) : (
+                                             format(dateRange.from, "LLL dd, y")
+                                         )
+                                     ) : (
+                                         <span>Pick a date range</span>
+                                     )}
+                                 </Button>
+                             </PopoverTrigger>
+                             <PopoverContent className="w-auto p-0" align="end">
+                                 <Calendar
+                                     initialFocus
+                                     mode="range"
+                                     defaultMonth={dateRange?.from}
+                                     selected={dateRange}
+                                     onSelect={setDateRange}
+                                     numberOfMonths={2}
+                                 />
+                             </PopoverContent>
+                         </Popover>
+                        {/* Action Buttons */}
+                         <Button size="sm" variant="outline" className="h-7 gap-1">
+                            <File className="h-3.5 w-3.5" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                Export
+                            </span>
+                        </Button>
+                         <DialogTrigger asChild>
+                            <Button size="sm" className="h-7 gap-1" onClick={handleAdd}>
+                                <PlusCircle className="h-3.5 w-3.5" />
+                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                    Create Campaign
+                                </span>
+                            </Button>
+                         </DialogTrigger>
+                    </div>
+                </div>
+                
+                {/* Analytics Cards */}
+                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Recipients</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">34,582</div>
+                            <p className="text-xs text-muted-foreground">+5.1% from last month</p>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Avg. Open Rate</CardTitle>
+                            <MailCheck className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">28.3%</div>
+                            <p className="text-xs text-muted-foreground">+1.2% from last month</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Avg. Click Rate</CardTitle>
+                             <AreaChart className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">4.1%</div>
+                            <p className="text-xs text-muted-foreground">+0.5% from last month</p>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Unsubscribes</CardTitle>
+                            <XCircle className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">128</div>
+                            <p className="text-xs text-muted-foreground">-10% from last month</p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Campaigns Table */} 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Campaigns</CardTitle>
+                        <CardDescription>
+                            Your recent email campaigns.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden md:table-cell">Sent Date</TableHead>
+                                    <TableHead className="hidden md:table-cell">Recipients</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Open Rate</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Click Rate</TableHead>
+                                    <TableHead>
+                                        <span className="sr-only">Actions</span>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                               {isLoading && (
+                                   <TableRow><TableCell colSpan={7} className="text-center">Loading...</TableCell></TableRow>
+                               )}
+                               {error && (
+                                    <TableRow><TableCell colSpan={7} className="text-center text-red-600">Error: {error}</TableCell></TableRow>
+                               )}
+                                {!isLoading && !error && campaigns.map((campaign) => (
+                                    <TableRow key={campaign.id}>
+                                        <TableCell className="font-medium">
+                                            <div className="font-medium">{campaign.name}</div>
+                                            <div className="text-xs text-muted-foreground hidden md:block">{campaign.subject}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={ 
+                                                campaign.status === 'Sent' ? 'default' : 
+                                                campaign.status === 'Scheduled' ? 'secondary' : 'outline'
+                                            }>
+                                                {campaign.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="hidden md:table-cell">
+                                            {campaign.sent_date ? format(new Date(campaign.sent_date), 'PPp') : '-'}
+                                        </TableCell>
+                                        <TableCell className="hidden md:table-cell">{campaign.recipients}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{campaign.open_rate}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{campaign.click_rate}</TableCell>
+                                        <TableCell>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                        <span className="sr-only">Toggle menu</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem>View Stats</DropdownMenuItem>
+                                                    <DialogTrigger asChild>
+                                                        <DropdownMenuItem onClick={() => handleEdit(campaign)}>Edit</DropdownMenuItem>
+                                                    </DialogTrigger>
+                                                     <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem 
+                                                        className="text-red-600 focus:text-red-600" 
+                                                        onClick={() => handleDelete(campaign.id)}
+                                                     >
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {!isLoading && !error && campaigns.length === 0 && (
+                                    <TableRow><TableCell colSpan={7} className="text-center">No campaigns found.</TableCell></TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                    <CardFooter>
+                        <div className="text-xs text-muted-foreground">
+                            Showing <strong>1-{campaigns.length}</strong> of <strong>{campaigns.length}</strong> campaigns
+                        </div>
+                         {/* Optional Pagination */}
+                    </CardFooter>
+                </Card>
+
+            </main>
+
+             {/* Add/Edit Dialog Content */}
+             <DialogContent className="sm:max-w-3xl"> {/* Make dialog wider */}
+                 <DialogHeader>
+                     <DialogTitle>{selectedCampaign ? 'Edit Campaign' : 'Create New Campaign'}</DialogTitle>
+                     <DialogDescription>
+                         {selectedCampaign ? 'Modify the campaign details and content.' : 'Set up a new email campaign.'}
+                     </DialogDescription>
+                 </DialogHeader>
+                  <CampaignForm 
+                    campaign={selectedCampaign} 
+                    onSave={handleSaveCampaign} 
+                    onCancel={() => setIsAddEditDialogOpen(false)} 
+                  />
+                 <DialogFooter>
+                    <DialogClose asChild>
+                         <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                     {/* Add Save/Send buttons (likely inside CampaignForm) */}
+                 </DialogFooter>
+             </DialogContent>
+         </Dialog>
+    );
 };
 
 export default EmailCampaignsPage;

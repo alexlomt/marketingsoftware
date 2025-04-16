@@ -3,8 +3,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import FormField from '@/components/FormField';
-import Button from '@/components/Button';
+// Import shadcn components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 
 export default function RegisterFormFields() {
@@ -12,7 +14,7 @@ export default function RegisterFormFields() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [organizationName, setOrganizationName] = useState(''); // New state
+  const [organizationName, setOrganizationName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,7 +23,6 @@ export default function RegisterFormFields() {
     setIsLoading(true);
     setError('');
 
-    // Basic password validation (add more rules as needed)
     if (password.length < 8) {
         setError('Password must be at least 8 characters long.');
         setIsLoading(false);
@@ -34,14 +35,12 @@ export default function RegisterFormFields() {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Added organization_name
-        body: JSON.stringify({ name, email, password, organization_name: organizationName }), 
+        body: JSON.stringify({ name, email, password, organization_name: organizationName }),
       });
 
       if (response.ok) {
-        // Registration successful - typically redirect to login or maybe dashboard
         console.log('Registration successful, redirecting to login...');
-        router.push('/login?registered=true'); // Redirect to login with a success indicator
+        router.push('/login?registered=true');
       } else {
         const data = await response.json();
         setError(data.error || 'Registration failed. Please try again.');
@@ -66,55 +65,69 @@ export default function RegisterFormFields() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <FormField
-            label="Full Name"
-            type="text"
-            id="name"
-            name="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            placeholder="Your Name"
-            disabled={isLoading}
-            className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-          />
-          <FormField
-            label="Email"
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@example.com"
-            disabled={isLoading}
-            className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-          />
-          <FormField
-            label="Password"
-            type="password"
-            id="password"
-            name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="•••••••• (min. 8 characters)"
-            disabled={isLoading}
-            className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-          />
-          {/* ADD THIS FIELD */}
-           <FormField
-             label="Organization Name"
-             type="text"
-             id="organizationName"
-             name="organizationName"
-             value={organizationName}
-             onChange={(e) => setOrganizationName(e.target.value)}
-             required
-             placeholder="Your Organization's Name"
-             disabled={isLoading}
-             className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-           />
+          {/* Name Field */}
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="name" className="text-gray-300">Full Name</Label>
+            <Input
+              type="text"
+              id="name"
+              name="name"
+              placeholder="Your Name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isLoading}
+              className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          {/* Email Field */}
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="email" className="text-gray-300">Email</Label>
+            <Input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Password Field */}
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="password" className="text-gray-300">Password</Label>
+            <Input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="•••••••• (min. 8 characters)"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          {/* Organization Name Field */}
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="organizationName" className="text-gray-300">Organization Name</Label>
+            <Input
+              type="text"
+              id="organizationName"
+              name="organizationName"
+              placeholder="Your Organization's Name"
+              required
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              disabled={isLoading}
+              className="bg-gray-700/50 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
 
           {error && (
             <p className="text-center text-sm text-red-500" role="alert">
@@ -122,10 +135,10 @@ export default function RegisterFormFields() {
             </p>
           )}
 
-          <Button type="submit" fullWidth disabled={isLoading} variant="primary" size="lg">
+          <Button type="submit" disabled={isLoading} size="lg" className="w-full">
             {isLoading ? (
               <span className="flex items-center justify-center">
-                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                  </svg>
@@ -134,7 +147,6 @@ export default function RegisterFormFields() {
              ) : 'Create Account'}
           </Button>
 
-          {/* Login Link */}
           <div className="mt-6 text-center text-sm">
             <span className="text-gray-400">Already have an account? </span>
             <Link href="/login" className="font-medium text-blue-500 hover:text-blue-400">
