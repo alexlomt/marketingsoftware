@@ -1,368 +1,295 @@
 'use client';
 
-import React from 'react';
-import PageHeader from '@/components/PageHeader';
-import Button from '@/components/Button';
-import Table from '@/components/Table';
-import Card from '@/components/Card';
-import FormField from '@/components/FormField';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
+import {
+    MoreVertical, File, PlusCircle, ListFilter, Eye, Share2, Edit, Trash2, Play, Pause, Loader2, Zap, Mail, UserCheck, Tag, Settings, Bell, Clock // Example Icons for actions/triggers
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch"; // For activating/deactivating
+import { Label } from "@/components/ui/label";
+import { AlertTriangle } from 'lucide-react'; // Added for error display
+
+// Assume API functions exist
+// import { fetchWorkflows, updateWorkflowStatus, deleteWorkflow } from '@/lib/api/workflows';
+
+// --- Helper Data & Functions ---
+
+// Simple icon mapping for triggers (expand as needed)
+const triggerIcons = {
+    'New Contact Created': UserCheck,
+    'Deal Stage Changed': DollarSign,
+    'Form Submitted': File, // Using File icon as example
+    'Tag Added': Tag,
+    'Deal Closed Won': DollarSign, // Example, might need specific icon
+    'default': Zap // Fallback icon
+};
+
+// Simple icon mapping for common actions (expand as needed)
+const actionIcons = {
+     'Send Email': Mail,
+     'Add Tag': Tag,
+     'Update Field': Edit,
+     'Create Task': ListFilter, // Example
+     'Send Notification': Bell, // Assuming Bell from lucide-react
+     'Wait': Clock, // Assuming Clock from lucide-react
+     'default': Settings // Fallback icon
+};
+
+
+// --- Main Page Component ---
 
 const WorkflowsPage = () => {
-  // Sample data for demonstration
-  const workflows = [
-    { 
-      id: '1', 
-      name: 'New Lead Follow-up', 
-      description: 'Automatically follow up with new leads',
-      trigger: 'New Contact Created',
-      actions: 3,
-      is_active: true,
-      created_at: '2025-02-15T10:30:00'
-    },
-    { 
-      id: '2', 
-      name: 'Deal Stage Update', 
-      description: 'Notify team when deal stage changes',
-      trigger: 'Deal Stage Changed',
-      actions: 2,
-      is_active: true,
-      created_at: '2025-02-28T14:45:00'
-    },
-    { 
-      id: '3', 
-      name: 'Customer Onboarding', 
-      description: 'Start onboarding process for new customers',
-      trigger: 'Deal Closed Won',
-      actions: 5,
-      is_active: false,
-      created_at: '2025-03-10T09:15:00'
-    },
-  ];
-  
-  // Column definitions for workflows table
-  const workflowColumns = [
-    { header: 'Workflow Name', accessor: 'name' },
-    { header: 'Description', accessor: 'description' },
-    { header: 'Trigger', accessor: 'trigger' },
-    { header: 'Actions', accessor: 'actions' },
-    { 
-      header: 'Status', 
-      cell: (row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          row.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-        }`}>
-          {row.is_active ? 'Active' : 'Inactive'}
-        </span>
-      )
-    },
-    { 
-      header: 'Created', 
-      cell: (row) => {
-        const date = new Date(row.created_at);
-        return date.toLocaleDateString();
-      }
-    },
-    { 
-      header: 'Actions', 
-      cell: (row) => (
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm">View</Button>
-          <Button variant="outline" size="sm">Edit</Button>
-          <Button variant={row.is_active ? 'danger' : 'secondary'} size="sm">
-            {row.is_active ? 'Deactivate' : 'Activate'}
-          </Button>
-        </div>
-      )
-    },
-  ];
-  
-  return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <PageHeader
-        title="Workflows"
-        description="Automate your business processes with custom workflows"
-        actions={
-          <Button>
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create Workflow
-          </Button>
+    const router = useRouter();
+    // TODO: Replace with actual API data fetching
+    const [workflows, setWorkflows] = useState([
+        { id: '1', name: 'New Lead Follow-up', description: 'Automatically follow up', trigger: 'New Contact Created', actions: ['Send Email', 'Add Tag', 'Create Task'], is_active: true, created_at: '2025-02-15T10:30:00' },
+        { id: '2', name: 'Deal Stage Update', description: 'Notify team on changes', trigger: 'Deal Stage Changed', actions: ['Send Notification', 'Update Field'], is_active: true, created_at: '2025-02-28T14:45:00' },
+        { id: '3', name: 'Customer Onboarding', description: 'Start onboarding process', trigger: 'Deal Closed Won', actions: ['Send Email', 'Create Task', 'Add Tag', 'Wait', 'Send Email'], is_active: false, created_at: '2025-03-10T09:15:00' },
+    ]);
+    const [isLoading, setIsLoading] = useState(false); // Add loading state
+    const [error, setError] = useState(null); // Add error state
+    const [updatingStatusId, setUpdatingStatusId] = useState(null); // Track which switch is loading
+    
+    // --- Data Fetching ---
+    const loadWorkflows = useCallback(async () => {
+         setIsLoading(true);
+         setError(null);
+         try {
+             // TODO: Replace with actual API call
+             console.log("Fetching workflows...");
+             // const response = await fetch('/api/workflows');
+             // if (!response.ok) throw new Error('Failed to fetch');
+             // const data = await response.json();
+             // setWorkflows(data.workflows || []);
+             await new Promise(res => setTimeout(res, 500)); // Simulate delay
+             console.log("Workflows loaded (mocked)");
+         } catch (err) {
+             console.error("Failed to load workflows:", err);
+             setError(err.message);
+             setWorkflows([]);
+         } finally {
+             setIsLoading(false);
+         }
+     }, []);
+
+     useEffect(() => {
+         loadWorkflows();
+     }, [loadWorkflows]);
+
+    // --- Actions ---
+
+    // Redirect to workflow builder
+    const goToWorkflowBuilder = (workflowId = null) => {
+        const path = workflowId ? `/workflows/builder/${workflowId}` : '/workflows/builder/new';
+        console.log(`Redirecting to workflow builder: ${path}`);
+        router.push(path); // Use Next.js router
+    }
+
+    const toggleWorkflowStatus = async (workflowId, currentStatus) => {
+        const newStatus = !currentStatus;
+        setUpdatingStatusId(workflowId); // Indicate loading for this specific switch
+        
+        // Optimistic update
+        setWorkflows(currentWorkflows => 
+            currentWorkflows.map(wf => wf.id === workflowId ? { ...wf, is_active: newStatus } : wf)
+        );
+
+        try {
+            // TODO: Replace with actual API call
+            console.log(`Updating status for ${workflowId} to ${newStatus ? 'Active' : 'Inactive'}...`);
+            // const response = await fetch(`/api/workflows/${workflowId}/status`, { 
+            //    method: 'PUT', 
+            //    headers: { 'Content-Type': 'application/json' },
+            //    body: JSON.stringify({ is_active: newStatus })
+            // });
+            // if (!response.ok) throw new Error('Failed to update status');
+            await new Promise(res => setTimeout(res, 700)); // Simulate API call
+            console.log("Status updated successfully (simulated)");
+            // Optional: Show success toast/message
+
+        } catch (err) {
+            console.error("Error updating workflow status:", err);
+            alert(`Failed to update status: ${err.message}`);
+            // Revert optimistic update on error
+            setWorkflows(currentWorkflows => 
+                currentWorkflows.map(wf => wf.id === workflowId ? { ...wf, is_active: currentStatus } : wf)
+            );
+        } finally {
+             setUpdatingStatusId(null); // Clear loading indicator for this switch
         }
-      />
-      
-      {/* Workflows Table */}
-      <Card className="mt-6">
-        <Table 
-          columns={workflowColumns} 
-          data={workflows} 
-          onRowClick={(row) => console.log('Clicked workflow:', row)}
-        />
-      </Card>
-      
-      {/* Workflow Builder */}
-      <Card className="mt-8" title="Workflow Builder">
-        <div className="mt-4">
-          <div className="mb-6">
-            <FormField
-              label="Workflow Name"
-              name="name"
-              placeholder="Enter workflow name"
-              value="New Lead Follow-up"
-            />
-          </div>
-          
-          <div className="mb-6">
-            <FormField
-              label="Description"
-              name="description"
-              type="textarea"
-              placeholder="Enter workflow description"
-              value="Automatically follow up with new leads"
-            />
-          </div>
-          
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Trigger</h3>
-            <Card className="bg-gray-50">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+    }
+
+    const handleDelete = async (workflowId) => {
+         if (!confirm('Are you sure you want to delete this workflow?')) return;
+         console.log("Deleting workflow:", workflowId);
+         setError(null); // Clear previous errors
+         // TODO: Add loading state for deletion?
+         try {
+             // TODO: Replace with actual API call
+            // const response = await fetch(`/api/workflows/${workflowId}`, { method: 'DELETE' });
+            // if (!response.ok) throw new Error('Failed to delete');
+             await new Promise(res => setTimeout(res, 500));
+             console.log("Workflow deleted (simulated)");
+             setWorkflows(currentWorkflows => currentWorkflows.filter(wf => wf.id !== workflowId));
+         } catch(err) {
+             console.error("Error deleting workflow:", err);
+             setError(`Failed to delete workflow: ${err.message}`); // Show error feedback
+             alert(`Failed to delete workflow: ${err.message}`);
+         }
+    }
+
+    return (
+            <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+                <div className="flex items-center">
+                    <h1 className="text-lg font-semibold md:text-2xl">Workflows</h1>
+                    <div className="ml-auto flex items-center gap-2">
+                         {/* Add Filters if needed */}
+                         <Button size="sm" className="h-8 gap-1" onClick={() => goToWorkflowBuilder()}> 
+                            <PlusCircle className="h-4 w-4" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                Create Workflow
+                            </span>
+                        </Button>
+                    </div>
                 </div>
-                <div className="ml-4">
-                  <h4 className="text-sm font-medium text-gray-900">When a new contact is created</h4>
-                  <p className="text-sm text-gray-500">This workflow will trigger whenever a new contact is added to the system</p>
-                </div>
-                <div className="ml-auto">
-                  <Button variant="outline" size="sm">Change</Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-          
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Conditions</h3>
-              <Button variant="secondary" size="sm">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Add Condition
-              </Button>
-            </div>
-            
-            <Card className="bg-gray-50 mb-4">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div className="ml-4 flex-grow">
-                  <div className="grid grid-cols-3 gap-4">
-                    <FormField
-                      name="condition_field"
-                      type="select"
-                      value="source"
-                      options={[
-                        { value: 'source', label: 'Source' },
-                        { value: 'email', label: 'Email' },
-                        { value: 'phone', label: 'Phone' },
-                      ]}
-                    />
-                    <FormField
-                      name="condition_operator"
-                      type="select"
-                      value="equals"
-                      options={[
-                        { value: 'equals', label: 'Equals' },
-                        { value: 'contains', label: 'Contains' },
-                        { value: 'starts_with', label: 'Starts with' },
-                      ]}
-                    />
-                    <FormField
-                      name="condition_value"
-                      value="Website"
-                    />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-          
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Actions</h3>
-              <Button variant="secondary" size="sm">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Add Action
-              </Button>
-            </div>
-            
-            <Card className="bg-gray-50 mb-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div className="ml-4 flex-grow">
-                  <h4 className="text-sm font-medium text-gray-900">Send Email</h4>
-                  <p className="text-sm text-gray-500 mb-4">Send an automated email to the contact</p>
-                  
-                  <div className="space-y-4">
-                    <FormField
-                      label="Email Template"
-                      name="email_template"
-                      type="select"
-                      value="welcome_email"
-                      options={[
-                        { value: 'welcome_email', label: 'Welcome Email' },
-                        { value: 'follow_up', label: 'Follow-up Email' },
-                        { value: 'newsletter', label: 'Newsletter' },
-                      ]}
-                    />
-                    <FormField
-                      label="Delay"
-                      name="delay"
-                      type="select"
-                      value="immediately"
-                      options={[
-                        { value: 'immediately', label: 'Immediately' },
-                        { value: '1_day', label: 'After 1 day' },
-                        { value: '3_days', label: 'After 3 days' },
-                        { value: '1_week', label: 'After 1 week' },
-                      ]}
-                    />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-            </Card>
-            
-            <Card className="bg-gray-50 mb-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                </div>
-                <div className="ml-4 flex-grow">
-                  <h4 className="text-sm font-medium text-gray-900">Create Task</h4>
-                  <p className="text-sm text-gray-500 mb-4">Create a follow-up task for the sales team</p>
-                  
-                  <div className="space-y-4">
-                    <FormField
-                      label="Task Title"
-                      name="task_title"
-                      value="Follow up with new lead"
-                    />
-                    <FormField
-                      label="Assigned To"
-                      name="assigned_to"
-                      type="select"
-                      value="sales_team"
-                      options={[
-                        { value: 'sales_team', label: 'Sales Team' },
-                        { value: 'john_smith', label: 'John Smith' },
-                        { value: 'sarah_johnson', label: 'Sarah Johnson' },
-                      ]}
-                    />
-                    <FormField
-                      label="Due Date"
-                      name="due_date"
-                      type="select"
-                      value="3_days"
-                      options={[
-                        { value: '1_day', label: 'In 1 day' },
-                        { value: '3_days', label: 'In 3 days' },
-                        { value: '1_week', label: 'In 1 week' },
-                        { value: '2_weeks', label: 'In 2 weeks' },
-                      ]}
-                    />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-            </Card>
-            
-            <Card className="bg-gray-50">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                </div>
-                <div className="ml-4 flex-grow">
-                  <h4 className="text-sm font-medium text-gray-900">Add Tag</h4>
-                  <p className="text-sm text-gray-500 mb-4">Add a tag to the contact</p>
-                  
-                  <div className="space-y-4">
-                    <FormField
-                      label="Tag"
-                      name="tag"
-                      type="select"
-                      value="new_lead"
-                      options={[
-                        { value: 'new_lead', label: 'New Lead' },
-                        { value: 'interested', label: 'Interested' },
-                        { value: 'hot_lead', label: 'Hot Lead' },
-                        { value: 'customer', label: 'Customer' },
-                      ]}
-                    />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-800">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-          
-          <div className="flex justify-between pt-6 border-t border-gray-200">
-            <Button variant="outline">Cancel</Button>
-            <div className="flex space-x-3">
-              <FormField
-                label="Activate workflow"
-                name="is_active"
-                type="checkbox"
-                checked={true}
-              />
-              <Button>Save Workflow</Button>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
+                
+                 {/* Display Page Errors */} 
+                 {error && (
+                    <Card className="border-destructive bg-destructive/10">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-destructive">Error</CardTitle>
+                             <AlertTriangle className="h-4 w-4 text-destructive" />
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xs text-destructive">{error}</p>
+                             <Button variant="ghost" size="sm" onClick={loadWorkflows} className="mt-2 text-destructive hover:text-destructive">Retry</Button>
+                        </CardContent>
+                    </Card>
+                 )}
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Your Workflows</CardTitle>
+                        <CardDescription>
+                            Automate tasks based on triggers and conditions.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead className="hidden md:table-cell">Trigger</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Actions</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>
+                                        <span className="sr-only">Actions</span>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                               {isLoading && (
+                                   <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                                    <Loader2 className="h-6 w-6 animate-spin inline-block mr-2" /> Loading workflows...
+                                    </TableCell></TableRow>
+                               )}
+                                {!isLoading && error && ( 
+                                    <TableRow><TableCell colSpan={5} className="text-center text-destructive py-10">Failed to load workflows: {error}</TableCell></TableRow>
+                                )}
+                                {!isLoading && !error && workflows.map((workflow) => { 
+                                    const TriggerIcon = triggerIcons[workflow.trigger] || triggerIcons['default'];
+                                    const isSwitchLoading = updatingStatusId === workflow.id;
+                                    return (
+                                        <TableRow key={workflow.id}>
+                                            <TableCell className="font-medium">
+                                                {workflow.name}
+                                                <div className="text-xs text-muted-foreground hidden md:block">{workflow.description}</div>
+                                            </TableCell>
+                                            <TableCell className="hidden md:table-cell">
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <TriggerIcon className="h-4 w-4 text-muted-foreground"/>
+                                                    <span>{workflow.trigger}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">
+                                                 <div className="flex items-center gap-1">
+                                                     <span className="text-sm">{workflow.actions?.length || 0}</span>
+                                                      <span className="text-xs text-muted-foreground">step(s)</span>
+                                                     {/* Optionally show icons for first few actions */}
+                                                     <div className="flex -space-x-1 overflow-hidden ml-2">
+                                                        {workflow.actions?.slice(0, 3).map((actionName, idx) => {
+                                                             const ActionIcon = actionIcons[actionName] || actionIcons['default'];
+                                                             return <ActionIcon key={idx} className="inline-block h-4 w-4 text-muted-foreground bg-background rounded-full ring-1 ring-border" title={actionName}/>;
+                                                         })}
+                                                     </div>
+                                                 </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                 <div className="flex items-center space-x-2">
+                                                     <Switch
+                                                         id={`status-${workflow.id}`}
+                                                         checked={workflow.is_active}
+                                                         onCheckedChange={() => toggleWorkflowStatus(workflow.id, workflow.is_active)}
+                                                         disabled={isSwitchLoading} // Disable while updating
+                                                         aria-label={workflow.is_active ? 'Deactivate' : 'Activate'}
+                                                     />
+                                                     <Label htmlFor={`status-${workflow.id}`} className="text-xs w-12"> {/* Fixed width label */} 
+                                                         {isSwitchLoading ? <Loader2 className="h-3 w-3 animate-spin"/> : (workflow.is_active ? 'Active' : 'Inactive')}
+                                                     </Label>
+                                                 </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                            <MoreVertical className="h-4 w-4" />
+                                                            <span className="sr-only">Toggle menu</span>
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuItem onClick={() => goToWorkflowBuilder(workflow.id)}>
+                                                             <Edit className="mr-2 h-4 w-4"/> Edit Workflow
+                                                        </DropdownMenuItem>
+                                                         <DropdownMenuItem>View History</DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem 
+                                                            className="text-destructive focus:text-destructive focus:bg-destructive/10" 
+                                                            onClick={() => handleDelete(workflow.id)}
+                                                        >
+                                                             <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                                {!isLoading && !error && workflows.length === 0 && (
+                                    <TableRow><TableCell colSpan={5} className="text-center py-10">No workflows created yet.</TableCell></TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                    <CardFooter>
+                        <div className="text-xs text-muted-foreground">
+                            Showing <strong>{workflows.length}</strong> workflow(s)
+                        </div>
+                         {/* Optional Pagination */}
+                    </CardFooter>
+                </Card>
+            </main>
+            {/* No Dialog needed here if creation/edit goes to builder */}
+        );
 };
 
 export default WorkflowsPage;
