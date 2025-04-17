@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import {
-    MoreVertical, File, PlusCircle, ListFilter, Eye, Share2, Edit, Trash2, Play, Pause, Loader2, Zap, Mail, UserCheck, Tag, Settings, Bell, Clock // Example Icons for actions/triggers
+    MoreVertical, File, PlusCircle, ListFilter, Eye, Share2, Edit, Trash2, Play, Pause, Loader2, Zap, Mail, UserCheck, Tag, Settings, Bell, Clock, AlertTriangle // Example Icons
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch"; // For activating/deactivating
 import { Label } from "@/components/ui/label";
-import { AlertTriangle } from 'lucide-react'; // Added for error display
+// Dialog might be needed if creating basic details first, but often workflows go straight to builder
+// import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"; 
 
 // Assume API functions exist
 // import { fetchWorkflows, updateWorkflowStatus, deleteWorkflow } from '@/lib/api/workflows';
