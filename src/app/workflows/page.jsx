@@ -273,7 +273,7 @@ const WorkflowsPage = () => {
                                                 </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
-                                    )
+                                    );
                                 })}
                                 {!isLoading && !error && workflows.length === 0 && (
                                     <TableRow><TableCell colSpan={5} className="text-center py-10">No workflows created yet.</TableCell></TableRow>
